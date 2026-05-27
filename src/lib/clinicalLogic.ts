@@ -674,7 +674,7 @@ function anklePlan(p: GeneratePlanParams): RehabPlan {
     rehabMenu: d.rehabMenu,
     timeline: td ? [...d.timeline, { week: "目標日", goal: "大会・試合", activity: `${td}日後` }] : d.timeline,
     alert: d.alert,
-    showOttawaRule: days <= 7 && p.grade !== "I",
+    showOttawaRule: true,
   };
 }
 
