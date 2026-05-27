@@ -530,6 +530,36 @@ export default function RehabApp() {
               <p style={{ color: MUTED, fontSize: 14 }}>スポーツ・ケガの種類・グレードを選択してリハビリプランを作成します。</p>
             </div>
 
+            {/* App purpose / concept card */}
+            <Card style={{ borderColor: `${BLUE}50`, background: "#f4f9fd" }}>
+              <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
+                <span style={{ fontSize: 28, flexShrink: 0, lineHeight: 1 }}>🏃</span>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 800, color: BLUE, marginBottom: 8, letterSpacing: "0.04em" }}>
+                    このアプリについて
+                  </div>
+                  <p style={{ fontSize: 13, color: "#2a4060", lineHeight: 1.9, margin: 0 }}>
+                    日本ではスポーツ医学の専門家が少なく、「痛みが引いたら復帰していいよ」といった
+                    根拠に乏しい復帰指導や、電気治療だけで終わるリハビリが今も多く行われています。
+                    本来は動作教育を含む適切なリハビリと、競技特性を理解した段階的な復帰計画が必要です。
+                    <br />
+                    このアプリは、<strong>信頼できるスポーツドクターやアスレティックトレーナーへの
+                    アクセスが難しい選手・保護者の方</strong>に向けて、
+                    スポーツ医学のエビデンスに基づくリハビリ計画の参考情報を提供するために作成しました。
+                  </p>
+                  <div style={{
+                    marginTop: 12, padding: "10px 14px", borderRadius: 8,
+                    background: "#fff8e8", border: "1px solid #d4a020",
+                    fontSize: 13, color: "#7a5000", lineHeight: 1.8,
+                  }}>
+                    ⚠️ <strong>大前提：</strong>
+                    身近に信頼できるスポーツドクターがいる場合は、<strong>必ずその意見を最優先</strong>にしてください。
+                    専門家へのアクセスが難しい場合に、このアプリを参考ツールとして活用してください。
+                  </div>
+                </div>
+              </div>
+            </Card>
+
             {/* Sport Selection */}
             <Card>
               <SectionLabel>スポーツ</SectionLabel>
@@ -1069,10 +1099,16 @@ export default function RehabApp() {
             {/* Disclaimer */}
             <div style={{
               background: "#f4f6f8", border: `1px solid ${BORDER}`,
-              borderRadius: 8, padding: "10px 16px",
+              borderRadius: 8, padding: "12px 16px",
+              display: "flex", flexDirection: "column", gap: 6,
             }}>
-              <span style={{ fontSize: 12, color: MUTED }}>
-                ⚠️ このプランはAIによる参考情報です。最終的な判断は必ず担当医師・トレーナーが行ってください。
+              <span style={{ fontSize: 12, color: MUTED, lineHeight: 1.7 }}>
+                📋 このプランはスポーツ医学のエビデンスに基づく<strong>参考情報</strong>です。
+                身近に信頼できる<strong>スポーツドクター・アスレティックトレーナー</strong>がいる場合は、必ずその指示を優先してください。
+              </span>
+              <span style={{ fontSize: 11, color: MUTED2, lineHeight: 1.6 }}>
+                本アプリは、専門家へのアクセスが難しい環境にある選手・保護者向けの参考ツールです。
+                症状の悪化・新たな痛みが生じた場合は直ちに活動を中止し、医療機関を受診してください。
               </span>
             </div>
 
