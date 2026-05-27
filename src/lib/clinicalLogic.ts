@@ -9,7 +9,8 @@ export type InjuryId =
 export type SportId =
   | "soccer" | "basketball" | "baseball" | "tennis" | "swimming"
   | "track_long" | "track_sprint" | "rugby" | "volleyball" | "judo"
-  | "american_football" | "gymnastics" | "lacrosse";
+  | "american_football" | "gymnastics" | "lacrosse"
+  | "other_noncontact" | "other_contact";
 
 export type JissType = "I" | "II" | "III";
 export type JissDegree = 1 | 2 | 3;
@@ -18,7 +19,7 @@ export interface JissGrade { type: JissType; degree: JissDegree }
 export interface TestItem { id: string; title: string; description: string; icon: string }
 export interface TestResult { id: string; result: boolean | null | "doctor_pending" }
 export interface RehabMenuItem { title: string; sets: string; note: string; details?: string }
-export interface TimelineRow { week: string; goal: string; activity: string }
+export interface TimelineRow { week: string; goal: string; activity: string; criteria?: string }
 export interface PhaseTrackerItem { phase: number; name: string; desc: string; duration: string }
 export interface ThrowingStep { step: number; name: string; distance: string; reps: string }
 
@@ -191,7 +192,7 @@ export const INJURY_TYPES: InjuryDef[] = [
   { id: "shoulder_dislocation", label: "肩関節脱臼",                 area: "上肢", usesJiss: false, icon: "💪", showDoctorOption: true, hasSurgery: true },
   { id: "elbow_throwing",       label: "投球障害肘（内側型）",       area: "上肢", usesJiss: false, icon: "⚾", hasSurgery: true },
   { id: "concussion",           label: "脳震盪",                       area: "頭部", usesJiss: false, icon: "🧠", showDoctorOption: true },
-  { id: "slap_lesion",          label: "上方関節唇損傷（SLAP）",       area: "上肢", usesJiss: false, icon: "🫀", showDoctorOption: true, hasSurgery: true },
+  { id: "slap_lesion",          label: "上方関節唇損傷（SLAP）",       area: "上肢", usesJiss: false, icon: "🦾", showDoctorOption: true, hasSurgery: true },
   { id: "heat_stroke",          label: "熱中症",                       area: "全身", usesJiss: false, icon: "🌡️", showDoctorOption: true },
   { id: "groin",                label: "グロインペイン症候群",          area: "下肢", usesJiss: false, icon: "🩻" },
 ];
@@ -308,11 +309,13 @@ export const SPORTS_DATA: SportDef[] = [
   { id: "track_long",        label: "陸上（長距離）",           emoji: "🏃", positions: ["長距離","マラソン","駅伝","その他"] },
   { id: "track_sprint",      label: "陸上（短距離・投擲）",     emoji: "⚡", positions: ["短距離（100〜400m）","ハードル","跳躍","投擲","混成","その他"] },
   { id: "lacrosse",          label: "ラクロス",                 emoji: "🥍", positions: ["AT（アタック）","MF（ミッドフィールダー）","DF（ディフェンス）","GK（ゴールキーパー）"] },
-  { id: "rugby",             label: "ラグビー",                 emoji: "🏉", positions: ["FW（フォワード）","BK（バックス）","SH（スクラムハーフ）","SO（スタンドオフ）"] },
+  { id: "rugby",             label: "ラグビー",                 emoji: "🏉", positions: ["FW（フォワード）","FL（フランカー）","N8（ナンバーエイト）","HO（フッカー）","BK（バックス）","SH（スクラムハーフ）","SO（スタンドオフ）","WTB（ウィング）"] },
   { id: "volleyball",        label: "バレーボール",             emoji: "🏐", positions: ["セッター","アウトサイドヒッター","ミドルブロッカー","オポジット","リベロ"] },
   { id: "judo",              label: "柔道",                     emoji: "🥋", positions: ["軽量級","中量級","重量級"] },
   { id: "american_football", label: "アメリカンフットボール",   emoji: "🏈", positions: ["QB（クォーターバック）","RB（ランニングバック）","WR（ワイドレシーバー）","OL（オフェンスライン）","DL（ディフェンスライン）","LB（ラインバッカー）","DB（ディフェンスバック）","K/P（キッカー）"] },
   { id: "gymnastics",        label: "体操",                     emoji: "🤸", positions: ["床運動","鞍馬","鉄棒","段違い平行棒","平均台","跳馬"] },
+  { id: "other_noncontact",  label: "その他（ノンコンタクト）", emoji: "🏃", positions: ["競技者","コーチ・スタッフ"] },
+  { id: "other_contact",     label: "その他（コンタクト）",     emoji: "🤺", positions: ["競技者","コーチ・スタッフ"] },
 ];
 
 // ---- Plan Generation ----
@@ -461,7 +464,7 @@ function muscleStrainPlan(p: GeneratePlanParams): RehabPlan {
   ];
 
   // ③ スポーツ・ポジション特異的エクササイズ（Phase 5）
-  const isCuttingSport = ["basketball", "soccer", "rugby", "american_football", "lacrosse", "volleyball"].includes(p.sport as string);
+  const isCuttingSport = ["basketball", "soccer", "rugby", "american_football", "lacrosse", "volleyball", "other_contact"].includes(p.sport as string);
   const isBasketball   = p.sport === "basketball";
 
   if (isCuttingSport) {
@@ -579,7 +582,7 @@ function anklePlan(p: GeneratePlanParams): RehabPlan {
     {
       summary: `足関節捻挫 ${gradeLabel}の急性期です。POLICE原則に従い、最適な荷重と保護を行いながら炎症をコントロールします。`,
       okList: ["アイシング（20分 × 4〜6回/日）","弾性包帯・サポーターによる圧迫","松葉杖を使った免荷〜部分荷重歩行","足関節ポンプ運動（仰臥位）","上半身トレーニング"],
-      ngList: ["全荷重歩行（疼痛時）","裸足での歩行","温熱療法（急性期48時間以内）","強い伸張・マッサージ"],
+      ngList: ["全荷重歩行（疼痛時）","温熱療法（急性期48時間以内）","強い伸張・マッサージ"],
       rehabMenu: [
         { title: "アイシング（POLICE）",    sets: "20分 × 6回",   note: "Optimal Load：痛みのない範囲で荷重開始", details: "POLICEとはProtection（保護）・Optimal Loading（最適荷重）・Ice（冷却）・Compression（圧迫）・Elevation（挙上）の頭文字です。受傷後48〜72時間は1日6回のアイシングを目安に実施してください。20分後は必ず外し1時間以上あけてから再実施します。圧迫包帯（弾性包帯）とセットで行うと浮腫軽減効果が高まります。疼痛のない範囲で荷重を始めることが現代の標準的アプローチです。" },
         { title: "足関節ポンプ運動",        sets: "20回 × 5セット", note: "仰臥位・挙上位で実施", details: "仰臥位・挙上位（クッション等で足を持ち上げた状態）で足首を上下（背屈・底屈）に動かします。ふくらはぎの筋肉ポンプ作用で静脈・リンパの還流を促し浮腫を軽減します。1セット20回を1日5回以上実施できます。痛みなく実施できるため、この時期の主要エクサイズです。" },
@@ -709,19 +712,19 @@ function concussionPlan(p: GeneratePlanParams): RehabPlan {
       alert: "脳震盪後の「Second Impact Syndrome」は生命の危険があります。症状が残る間は絶対に競技復帰しないでください。",
     },
     {
-      summary: "頭痛は消失しましたが、認知症状またはバランス障害が残っています。軽度有酸素運動から開始するGRTP Phase 2です。",
-      okList: ["ウォーキング（15〜20分）","水泳（軽度）","固定自転車（低負荷）","認知的作業（徐々に増やす）"],
-      ngList: ["ランニング","頭部への衝撃を伴う動作","コンタクットプレー","高強度の運動"],
+      summary: "頭痛は消失しましたが、認知症状またはバランス障害が残っています。この段階ではまだ有酸素運動（GRTP）は開始できません。日常生活レベルにとどめ、スマホ・PC・テレビなど脳への認知ストレスを極力避けてください。",
+      okList: ["室内での軽い日常生活動作","短い散歩（15分以内・症状増悪なければ）","安静・十分な睡眠","薄暗く静かな環境での休息"],
+      ngList: ["スマートフォン・PC・テレビの長時間使用（30分以上）","読書・勉強・集中を要する作業","スポーツ・体育参加","騒がしい環境・強い光・大きな音"],
       rehabMenu: [
-        { title: "ウォーキング（有酸素）", sets: "20〜30分",   note: "心拍数を最大の70%以下に保つ", details: "最大心拍数の70%以下を保ちながらウォーキングを行います。症状を悪化させない強度での有酸素運動（sub-threshold aerobic exercise）が脳震盪後の回復を促進することが研究で示されています。心拍数モニタリングを推奨します。途中で症状が増悪したら直ちに中止し安静に戻ります。" },
-        { title: "固定自転車（低負荷）",   sets: "15〜20分",   note: "症状チェックしながら実施", details: "固定自転車は転倒リスクがなく安全に有酸素運動ができます。Buffalo Concussion Treadmill Test（BCTT）で決定した症状発現心拍数の80%以下を目標とします。毎回開始時・中・終了時に症状スコアを確認してください。" },
-        { title: "認知トレーニング（軽度）", sets: "20〜30分", note: "読書・パズル等。疲労感で中止", details: "シンプルなパズル・読書・軽い計算など中程度の集中を要する活動から始めます。疲労感・頭痛が増悪した場合は即中止します。段階的に学業への復帰（Return to Learn）と競技への復帰（Return to Sport）を並行して進めます。一般的には学業復帰が競技復帰に先行します。" },
+        { title: "スクリーン回避（認知的安静）", sets: "1日中",   note: "スマホ・PC・テレビは原則禁止または1回30分以内", details: "スクリーン（スマートフォン・PC・テレビ）の使用を原則禁止、または1回30分以内にとどめます。明るい光・スクリーンの刺激が認知症状・頭痛を悪化させます。読書・勉強・集中を要する作業も同様に制限します。この制限は脳が必要な認知機能を回復するための重要な時間です。回復してから次第に解禁していきます。" },
+        { title: "症状日記記録",             sets: "1日3回",   note: "頭痛・めまい・霧感を0〜10でスコアリング", details: "頭痛・めまい・霧感（ブレインフォグ）・光過敏・音過敏・集中困難を0〜10のスコアで記録します。朝・昼・夜の3回記録することで症状の変化パターンを把握します。症状が増悪した活動・環境は翌日から避けてください。記録は医師・トレーナーへの経過報告にも活用できます。" },
+        { title: "軽い散歩（可能時）",       sets: "15分以内", note: "症状増悪なければ屋外を静かにゆっくり", details: "認知症状・バランス障害が残る段階では有酸素運動は行わず、軽い散歩にとどめてください。屋外での短い散歩は脳震盪後の回復を助ける可能性がありますが、15分を上限とし症状増悪があれば即中止します。有酸素運動（ジョギング・自転車等）は認知症状・バランスが完全に正常化してから開始します。" },
       ],
       timeline: [
-        { week: "Phase 2",  goal: "認知症状・バランス改善",  activity: "軽度有酸素運動" },
-        { week: "Phase 3〜", goal: "スポーツ特異的運動",     activity: "症状なし24時間後に進む" },
+        { week: "Phase 2",           goal: "認知症状・バランス完全消失", activity: "安静・スクリーン回避" },
+        { week: "Phase 3（移行条件）", goal: "全症状が正常化",           activity: "24時間症状なし確認後にのみ開始可" },
       ],
-      alert: "この段階で症状が増悪した場合は直ちにPhase 1に戻り、医師に報告してください。",
+      alert: "認知症状・バランス障害が残る間は有酸素運動（GRTP Phase 3）に進めません。スクリーン・学業・騒音などの認知ストレスを避け、完全消失を待ってから次フェーズへ進んでください。",
     },
     {
       summary: "基本的な認知・バランスは回復。有酸素運動で症状増悪がまだあります。スポーツ特異的な動作を非コンタクットで行うPhase 3です。",
@@ -863,11 +866,101 @@ function elbowThrowingPlan(p: GeneratePlanParams): RehabPlan {
 
 function genericPlan(p: GeneratePlanParams): RehabPlan {
   const days = getDays(p.injuryDate);
-  const inj = INJURY_TYPES.find((x) => x.id === p.injuryId);
+  const inj  = INJURY_TYPES.find((x) => x.id === p.injuryId);
   const label = inj?.label ?? p.injuryId;
 
-  const isAcute     = days <= 7;
-  const isSubacute  = days <= 21;
+  const surgDays  = p.surgeryDate ? getDays(p.surgeryDate) : null;
+  const surgWeeks = surgDays !== null ? Math.floor(surgDays / 7) : null;
+  const surgNote  = surgWeeks !== null ? `（術後${surgWeeks}週目）` : "";
+
+  // ---- ACL 専用プラン ----
+  if (p.injuryId === "ACL") {
+    const baseDays  = surgDays ?? days;
+    const baseWeeks = Math.floor(baseDays / 7);
+    const baseLabel = surgDays !== null ? "術後" : "受傷から";
+
+    let phase: string;
+    let phaseIdx: number;
+    if      (baseWeeks < 2)   { phase = "急性保護期";     phaseIdx = 0; }
+    else if (baseWeeks < 6)   { phase = "機能回復期";     phaseIdx = 1; }
+    else if (baseWeeks < 12)  { phase = "ランニング期";   phaseIdx = 2; }
+    else if (baseWeeks < 24)  { phase = "競技特異的期";   phaseIdx = 3; }
+    else                       { phase = "スポーツ復帰期"; phaseIdx = 4; }
+
+    const okROM  = t(p.tests, "okROM");
+    const okStr  = t(p.tests, "okStrength");
+    const okHop  = t(p.tests, "okHop");
+
+    // テスト結果で後退
+    if (!okROM && phaseIdx > 1) phaseIdx = 1;
+    if (!okStr && phaseIdx > 2) phaseIdx = 2;
+    if (!okHop && phaseIdx > 3) phaseIdx = 3;
+
+    const phaseLabels = ["急性保護期","機能回復期","ランニング期","競技特異的期","スポーツ復帰期"];
+    phase = phaseLabels[phaseIdx];
+
+    const aclMenu: Record<number, RehabMenuItem[]> = {
+      0: [
+        { title: "アイシング・圧迫・挙上", sets: "20分 × 4〜6回", note: "松葉杖で免荷歩行", details: "術直後〜2週は炎症コントロールが最優先です。20分アイシング → 1時間インターバルを繰り返します。弾性包帯での圧迫と枕での挙上を組み合わせると浮腫軽減効果が高まります。" },
+        { title: "足関節ポンプ運動",       sets: "20回 × 5",      note: "仰臥位・挙上位で静脈還流促進", details: "足首を上下に動かして下腿の静脈ポンプ機能を活性化します。血栓予防・浮腫軽減の両方に有効です。術後から翌日より開始できます。" },
+        { title: "等尺性大腿四頭筋収縮",   sets: "10秒 × 10回",   note: "膝を動かさず太もも前面に力を入れる", details: "仰臥位で膝裏に小さなタオルを置き、それを床に押し付けるようにして太もも前面（大腿四頭筋）に等尺性収縮をかけます。移植腱への負荷は最小限で廃用萎縮を防げます。" },
+      ],
+      1: [
+        { title: "パッシブ可動域訓練",     sets: "各方向10回 × 3", note: "完全伸展を最優先確保", details: "術後2〜6週は完全伸展（0°）の確保が最重要です。腹臥位で膝を自然に垂らして重力伸展、または仰臥位でカーフロールにより完全伸展を達成します。屈曲は疼痛のない範囲で徐々に90°以上を目指します。" },
+        { title: "カーフレイズ",           sets: "15回 × 3",       note: "全荷重歩行獲得後に開始", details: "両脚立位から片脚立位へ段階的に移行します。下腿三頭筋を強化しながら体重移動パターンを正常化します。" },
+        { title: "ミニスクワット",         sets: "15回 × 3",       note: "0〜60°範囲。疼痛なし範囲のみ", details: "深く曲げすぎない範囲（膝0〜60°）でミニスクワットを行います。膝が内側に入らないよう（ニーイン防止）アライメントに注意してください。徐々に深さを増やし標準スクワットへ移行します。" },
+      ],
+      2: [
+        { title: "直線ジョグ",             sets: "10〜20分",       note: "疼痛なし・跛行なし確認", details: "術後6週以降、跛行なく歩行できれば直線ジョグから開始します。最初は50〜60%の出力で、疼痛・腫脹の増悪がなければ週ごとに強度を上げます。" },
+        { title: "レッグプレス（両脚）",   sets: "12回 × 4",       note: "健側比70%の負荷を目標", details: "等速性または通常の筋力測定で健側比70%以上の大腿四頭筋筋力を目標とします。両脚→患脚片脚の順に移行します。" },
+        { title: "バランスボード訓練",     sets: "30秒 × 3",       note: "固有感覚再構築（片脚）", details: "固有感覚（プロプリオセプション）は術後に著しく低下しています。両脚→患脚片脚、安定面→不安定面の順に難易度を上げながら再構築します。" },
+      ],
+      3: [
+        { title: "アジリティラダー",       sets: "5〜10分",        note: "低速→高速。膝アライメント確認", details: "ラダードリルで多方向への敏捷性を段階的に回復します。低速で正確なフォームを習得してから速度を上げます。" },
+        { title: "カッティングドリル",     sets: "5〜10分",        note: "45°→90°切り返し", details: "45°カット→90°カット→急激な切り返しの順に難易度を上げます。着地時の膝アライメントを常に確認してください。" },
+        { title: "シングルレッグホップ",   sets: "3方向 × 5回",   note: "健側比85%以上を目標", details: "前方・側方・クロスホップの3種類で患側の距離を健側と比較します。85%以上が競技復帰の重要な基準値です。" },
+      ],
+      4: [
+        { title: "競技特異的ドリル（フル）", sets: "練習参加",     note: "ポジション固有動作を含む全強度", details: "スポーツ・ポジションに特有の全ての動作を競技と同等の強度で実施します。この段階をクリアしたうえで医師・トレーナーの最終許可を得て試合復帰となります。" },
+        { title: "コンタクット練習",         sets: "段階的参加",   note: "医師書面許可後のみ",             details: "コンタクットを伴う練習は必ず医師の書面許可を得てから開始します。許可書はトレーナー・コーチが保管することを推奨します。" },
+      ],
+    };
+
+    const aclTimeline: TimelineRow[] = [
+      { week: `${baseLabel}0〜2週`,   goal: "炎症・腫脹コントロール",  activity: "松葉杖免荷→部分荷重",     criteria: "腫脹軽減・膝完全伸展獲得" },
+      { week: `${baseLabel}2〜6週`,   goal: "全荷重歩行",              activity: "ROM・筋力訓練",            criteria: "屈曲90°以上・跛行なし歩行" },
+      { week: `${baseLabel}6〜12週`,  goal: "直線ジョグ開始",          activity: "プール・自転車・ジョグ",   criteria: "筋力健側比70%以上" },
+      { week: `${baseLabel}3〜6ヶ月`, goal: "方向転換・カット動作",    activity: "アジリティ・ホップ訓練",  criteria: "筋力80%・ホップ85%以上" },
+      { week: `${baseLabel}6〜9ヶ月`, goal: "スポーツ完全復帰",        activity: "競技特異的ドリル・試合",  criteria: "全基準クリア・医師許可" },
+    ];
+
+    return {
+      phase: `ACL：${phase}${surgNote}`,
+      currentPhaseIndex: phaseIdx,
+      totalPhases: 5,
+      summary: `前十字靱帯損傷（ACL）の${phase}${surgNote}です。術後リハビリは各フェーズの基準値をクリアしてから次に進みます。焦りは再断裂リスクを高めます。`,
+      okList: aclMenu[phaseIdx].map((m) => m.title),
+      ngList: phaseIdx <= 1
+        ? ["ランニング・ジャンプ","深いスクワット（膝90°以上）","コンタクットプレー","急激な方向転換"]
+        : phaseIdx <= 2
+        ? ["方向転換・カット","コンタクットプレー","ジャンプからの片足着地（まだ不可）"]
+        : ["医師許可なしのコンタクットプレー"],
+      rehabMenu: aclMenu[phaseIdx],
+      timeline: aclTimeline,
+      alert: "ACL再建術後は移植腱のリモデリングに9〜12ヶ月かかります。筋力・ホップテストの基準値をクリアせずに復帰すると再断裂リスクが高くなります。",
+      phaseTracker: [
+        { phase: 1, name: "急性保護期",   desc: "腫脹・痛みコントロール",  duration: "0〜2週" },
+        { phase: 2, name: "機能回復期",   desc: "全荷重・ROM・筋力",       duration: "2〜6週" },
+        { phase: 3, name: "ランニング期", desc: "直線走・筋力強化",         duration: "6〜12週" },
+        { phase: 4, name: "競技特異的期", desc: "カット・ホップ・アジリティ", duration: "3〜6ヶ月" },
+        { phase: 5, name: "復帰期",       desc: "コンタクット・試合",       duration: "6〜9ヶ月" },
+      ],
+    };
+  }
+
+  // ---- 汎用プラン（ACL以外） ----
+  const isAcute    = days <= 7;
+  const isSubacute = days <= 21;
 
   const phase = isAcute ? "急性期" : isSubacute ? "亜急性期〜回復期" : "機能回復〜スポーツ復帰期";
 
@@ -875,7 +968,7 @@ function genericPlan(p: GeneratePlanParams): RehabPlan {
     phase,
     currentPhaseIndex: isAcute ? 0 : isSubacute ? 1 : 2,
     totalPhases: 3,
-    summary: `${label}（${p.grade}）の${phase}です。症状と画像所見に基づいて段階的なリハビリプランを進めます。`,
+    summary: `${label}（${p.grade}）の${phase}${surgNote}です。症状と画像所見に基づいて段階的なリハビリプランを進めます。`,
     okList: isAcute
       ? ["安静・保護（損傷部位）","アイシング（20分 × 4〜6回）","疼痛なし範囲の自動運動","上肢または下肢の代替トレーニング"]
       : isSubacute
@@ -904,9 +997,9 @@ function genericPlan(p: GeneratePlanParams): RehabPlan {
           { title: "アジリティ訓練",     sets: "10〜15分",       note: "方向転換・加速・減速", details: "加速・減速・方向転換など競技で必要な動作を取り入れたドリルです。ラダードリル・コーンドリル等で多方向への敏捷性を回復します。低速→高速の順に段階的に難易度を上げ疼痛・代償動作が出ないことを確認しながら進めてください。" },
         ],
     timeline: [
-      { week: "0〜1週",   goal: "炎症コントロール",  activity: "安静・保護・アイシング" },
-      { week: "1〜3週",   goal: "機能回復",          activity: "ROM・筋力訓練" },
-      { week: "3〜6週〜", goal: "スポーツ復帰",      activity: "競技特異的ドリル→試合" },
+      { week: "0〜1週",   goal: "炎症コントロール", activity: "安静・保護・アイシング", criteria: "腫脹軽減・安静時疼痛消失" },
+      { week: "1〜3週",   goal: "機能回復",          activity: "ROM・筋力訓練",         criteria: "可動域回復・歩行正常化" },
+      { week: "3〜6週〜", goal: "スポーツ復帰",      activity: "競技特異的ドリル→試合", criteria: "筋力健側比80%・疼痛なし" },
     ],
     alert: `${label}は専門医による定期的な評価が必要です。症状悪化・新たな痛みは即座に医師に報告してください。`,
   };

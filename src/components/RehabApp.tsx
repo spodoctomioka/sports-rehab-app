@@ -225,21 +225,66 @@ function PoliceBlock() {
 // ---- Ottawa Ankle Rule ----
 
 function OttawaRuleBlock() {
+  const points = [
+    { zone: "足関節ゾーン", items: [
+      { label: "外踝後縁・下端6cm以内の圧痛", marker: "①", hint: "外くるぶしの後ろ〜下を親指でグッと押す" },
+      { label: "内踝後縁・下端6cm以内の圧痛", marker: "②", hint: "内くるぶしの後ろ〜下を押す" },
+    ]},
+    { zone: "中足部ゾーン", items: [
+      { label: "舟状骨（足背の内側）の圧痛",    marker: "③", hint: "土踏まずの内側・足の甲の盛り上がった部分" },
+      { label: "第5中足骨基部の圧痛",            marker: "④", hint: "小指側の足外縁・付け根のぽっこり出た部分" },
+    ]},
+    { zone: "荷重テスト", items: [
+      { label: "受傷時または受診時に4歩以上の歩行不能", marker: "⑤", hint: "受傷直後・来院時どちらかで4歩歩けない場合" },
+    ]},
+  ];
+
   return (
     <Card style={{ borderColor: "#f0a04060" }}>
-      <SectionLabel>⚠️ Ottawa Ankle Rule（X線撮影の適応）</SectionLabel>
-      <p style={{ fontSize: 13, color: MUTED2, marginBottom: 10 }}>以下のいずれかを満たす場合はX線撮影を推奨：</p>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        {[
-          "足関節後縁・内踝下端6cmの圧痛あり",
-          "足関節後縁・外踝下端6cmの圧痛あり",
-          "舟状骨（足背の内側）の圧痛あり",
-          "第5中足骨基部の圧痛あり",
-          "受傷時および受診時に4歩以上の歩行不能",
-        ].map((item, i) => (
-          <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-            <span style={{ color: "#d08000", fontSize: 13, flexShrink: 0, marginTop: 1 }}>□</span>
-            <span style={{ fontSize: 13, color: "#7a5800" }}>{item}</span>
+      <SectionLabel>⚠️ Ottawa Ankle Rule（骨折スクリーニング）</SectionLabel>
+      <p style={{ fontSize: 13, color: "#7a5800", marginBottom: 12, lineHeight: 1.7 }}>
+        以下のいずれかを満たす場合は<strong>スポーツ整形外科にてX線撮影</strong>を推奨：
+      </p>
+
+      {/* 足首の圧痛部位イラスト（テキスト図） */}
+      <div style={{
+        background: "#fdf5e0", border: "1px solid #e8c850", borderRadius: 10,
+        padding: "12px 14px", marginBottom: 14, fontSize: 12,
+      }}>
+        <div style={{ fontWeight: 700, color: "#7a5000", marginBottom: 8, fontSize: 12 }}>
+          🦶 圧痛確認ポイント（親指でしっかり押してください）
+        </div>
+        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+          {/* 足首側面図 */}
+          <div style={{ fontFamily: "monospace", fontSize: 12, color: "#5a4000", lineHeight: 1.9, flex: "0 0 auto" }}>
+            <div style={{ color: "#888", fontSize: 11, marginBottom: 2 }}>── 側面から見た足首 ──</div>
+            <div>　 ② 内踝 ｜ 外踝 ①</div>
+            <div>　　　　▼ 後縁　▼</div>
+            <div>　　  ↑6cm  ↑6cm  ← ここを押す</div>
+            <div style={{ marginTop: 4 }}>③ 舟状骨（内側足背）　④ 第5中足骨基部（小指側）</div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+        {points.map((zone) => (
+          <div key={zone.zone}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#b06000", marginBottom: 6, letterSpacing: "0.05em" }}>
+              ▶ {zone.zone}
+            </div>
+            {zone.items.map((item) => (
+              <div key={item.marker} style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 6 }}>
+                <span style={{
+                  width: 20, height: 20, borderRadius: "50%", background: "#f0a040",
+                  color: "#fff", fontSize: 11, fontWeight: 700, flexShrink: 0,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>{item.marker}</span>
+                <div>
+                  <div style={{ fontSize: 13, color: "#7a3800", fontWeight: 600 }}>{item.label}</div>
+                  <div style={{ fontSize: 11, color: "#a07040", marginTop: 1 }}>💡 {item.hint}</div>
+                </div>
+              </div>
+            ))}
           </div>
         ))}
       </div>
@@ -493,6 +538,9 @@ export default function RehabApp() {
             {currentSport && (
               <Card>
                 <SectionLabel>ポジション（任意）</SectionLabel>
+                <p style={{ fontSize: 11, color: MUTED, marginBottom: 10 }}>
+                  複数ポジションを兼務している場合は、<strong>最もプレー機会が多いポジション</strong>を選択してください。
+                </p>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
                   {currentSport.positions.map((pos) => (
                     <Chip key={pos} label={pos} active={position === pos} color="blue" onClick={() => setPosition(pos === position ? "" : pos)} />
@@ -871,26 +919,58 @@ export default function RehabApp() {
             {/* Timeline */}
             <Card>
               <SectionLabel>📅 復帰タイムライン</SectionLabel>
-              <div>
-                <div style={{
-                  display: "grid", gridTemplateColumns: "90px 1fr 1fr",
-                  gap: 12, padding: "6px 0", borderBottom: `1px solid ${BORDER}`, marginBottom: 4,
-                }}>
-                  {["時期", "目標", "可能な活動"].map((h) => (
-                    <span key={h} style={{ fontSize: 12, color: MUTED, fontWeight: 700 }}>{h}</span>
-                  ))}
-                </div>
-                {plan.timeline.map((row, i) => (
-                  <div key={i} style={{
-                    display: "grid", gridTemplateColumns: "90px 1fr 1fr",
-                    gap: 12, padding: "10px 0", borderBottom: `1px solid ${BORDER}20`,
-                  }}>
-                    <span style={{ fontSize: 12, color: BLUE, fontWeight: 600 }}>{row.week}</span>
-                    <span style={{ fontSize: 13, color: "#2a4050" }}>{row.goal}</span>
-                    <span style={{ fontSize: 13, color: MUTED2 }}>{row.activity}</span>
+              {/* 基準日表示 */}
+              {(() => {
+                const parts: string[] = [];
+                if (injuryDate) parts.push(`受傷日：${injuryDate.replace(/-/g, "/")}`);
+                if (surgeryDate) {
+                  const sw = Math.floor(Math.max(0,(Date.now() - new Date(surgeryDate).getTime()) / 86400000) / 7);
+                  parts.push(`手術日：${surgeryDate.replace(/-/g, "/")}（術後${sw}週目）`);
+                }
+                return parts.length > 0 ? (
+                  <p style={{ fontSize: 11, color: BLUE, marginBottom: 10 }}>
+                    📌 {parts.join("　／　")}
+                    {surgeryDate
+                      ? "　※ 時期表示は手術日を基準"
+                      : "　※ 時期表示は受傷日を基準"}
+                  </p>
+                ) : null;
+              })()}
+              {/* テーブル */}
+              {(() => {
+                const hasCriteria = plan.timeline.some((r) => r.criteria);
+                const cols = hasCriteria ? "80px 1fr 1fr 1fr" : "90px 1fr 1fr";
+                const headers = hasCriteria
+                  ? ["時期", "目標", "可能な活動", "クリア基準"]
+                  : ["時期", "目標", "可能な活動"];
+                return (
+                  <div>
+                    <div style={{
+                      display: "grid", gridTemplateColumns: cols,
+                      gap: 10, padding: "6px 0", borderBottom: `1px solid ${BORDER}`, marginBottom: 4,
+                    }}>
+                      {headers.map((h) => (
+                        <span key={h} style={{ fontSize: 11, color: MUTED, fontWeight: 700 }}>{h}</span>
+                      ))}
+                    </div>
+                    {plan.timeline.map((row, i) => (
+                      <div key={i} style={{
+                        display: "grid", gridTemplateColumns: cols,
+                        gap: 10, padding: "10px 0", borderBottom: `1px solid ${BORDER}20`,
+                      }}>
+                        <span style={{ fontSize: 11, color: BLUE, fontWeight: 600 }}>{row.week}</span>
+                        <span style={{ fontSize: 12, color: "#2a4050" }}>{row.goal}</span>
+                        <span style={{ fontSize: 12, color: MUTED2 }}>{row.activity}</span>
+                        {hasCriteria && (
+                          <span style={{ fontSize: 11, color: "#007a60", fontWeight: 600 }}>
+                            {row.criteria ? `✓ ${row.criteria}` : "—"}
+                          </span>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
             </Card>
 
             {/* Throwing Program */}
