@@ -266,11 +266,12 @@ export const TESTS_BY_INJURY: Record<InjuryId, TestItem[]> = {
     { id: "okThrow",     title: "投球動作可",       description: "疼痛なくスローイング動作（軽負荷）が可能か",   icon: "⚾" },
   ],
   concussion: [
-    { id: "okHeadache",  title: "頭痛なし",     description: "安静時・運動時の頭痛が完全に消失しているか",       icon: "🧠" },
-    { id: "okCog",       title: "認知症状なし", description: "霧がかかった感・集中困難・記憶障害がないか",       icon: "💭" },
-    { id: "okBalance",   title: "バランス正常", description: "【自己テスト】①両足揃え・目を閉じ20秒 ②片脚立ち（利き足でない方）・目を閉じ20秒 ③タンデム立位（前後に一直線に足を並べる）・目を閉じ20秒。いずれもふらつき・転倒・バランス崩れが受傷前と比べて明らかに増えていなければ「可」。自信がなければ「不可」を選択。", icon: "⚖" },
-    { id: "okExercise",  title: "運動増悪なし", description: "軽度有酸素運動後も症状増悪がないか",             icon: "🏃" },
-    { id: "okSleep",     title: "睡眠正常",     description: "睡眠障害（過眠・不眠）がないか",                 icon: "😴" },
+    { id: "okHeadache",  title: "頭痛なし",                description: "安静時・運動時の頭痛が完全に消失しているか",                                                                                                                                                                                                                                                                       icon: "🧠" },
+    { id: "okCog",       title: "認知症状なし",            description: "霧がかかった感・集中困難・記憶障害がないか",                                                                                                                                                                                                                                                                       icon: "💭" },
+    { id: "okBalance",   title: "バランス正常",            description: "【自己テスト】①両足揃え・目を閉じ20秒 ②片脚立ち（利き足でない方）・目を閉じ20秒 ③タンデム立位（前後に一直線に足を並べる）・目を閉じ20秒。いずれもふらつき・転倒・バランス崩れが受傷前と比べて明らかに増えていなければ「可」。自信がなければ「不可」を選択。",                                           icon: "⚖" },
+    { id: "okExercise",  title: "運動増悪なし",            description: "軽度有酸素運動後も症状増悪がないか",                                                                                                                                                                                                                                                                               icon: "🏃" },
+    { id: "okSleep",     title: "睡眠正常",                description: "睡眠障害（過眠・不眠）がないか",                                                                                                                                                                                                                                                                                   icon: "😴" },
+    { id: "okContact",   title: "コンタクット練習で症状増悪なし", description: "医師の許可を得てフル・コンタクット練習を実施し、24時間以内に症状増悪がなかったか。医師許可がまだ出ていない場合は「医師未許可」を選択してください。",                                                                                                                                                    icon: "🏅" },
   ],
   slap_lesion: [
     { id: "okPainFree",  title: "安静時疼痛なし",   description: "安静時・日常生活動作での肩部疼痛が消失しているか",                           icon: "😴" },
@@ -685,13 +686,15 @@ function concussionPlan(p: GeneratePlanParams): RehabPlan {
   const okBalance  = t(p.tests, "okBalance");
   const okExercise = t(p.tests, "okExercise");
   const okSleep    = t(p.tests, "okSleep");
+  const okContact  = t(p.tests, "okContact");
 
   let idx = 0;
   if      (!okHeadache)                         idx = 0;
   else if (!okCog || !okBalance)                idx = 1;
   else if (!okExercise)                         idx = 2;
   else if (!okSleep)                            idx = 3;
-  else                                          idx = 4;
+  else if (!okContact)                          idx = 4;
+  else                                          idx = 5;
 
   type D = { summary: string; okList: string[]; ngList: string[]; rehabMenu: RehabMenuItem[]; timeline: TimelineRow[]; alert: string };
   const data: D[] = [
@@ -760,26 +763,40 @@ function concussionPlan(p: GeneratePlanParams): RehabPlan {
       alert: "コンタクット練習（Level 5）への復帰は必ず医師（スポーツ専門医）の許可を得てから。許可なしのコンタクット参加は絶対に禁止です。",
     },
     {
-      // GRTP Level 5→6（目安：受傷後96時間以降→120時間）
-      summary: "全テストクリア。医師の許可のもとフル・コンタクット練習（Level 5）を実施し、24時間無症状であれば試合復帰（Level 6）へ進めます。リハビリの最終段階です。",
-      okList: ["フル・コンタクット練習（医師許可後）","全ての練習メニュー","試合復帰（Level 6 / 受傷後120時間以降）"],
-      ngList: ["医師の許可なしのコンタクット参加"],
+      // GRTP Phase 5（目安：受傷後96時間以降）— フル・コンタクット練習
+      summary: "非コンタクット練習で無症状を確認。GRTP Phase 5：医師の許可を得てフル・コンタクット練習を実施します。24時間無症状であれば最終ステップ Phase 6（試合復帰）へ進みます。",
+      okList: ["フル・コンタクット練習（医師許可後）","タックル・コンタクットを含む通常トレーニング","体力・筋力の最終仕上げ"],
+      ngList: ["医師許可なしのコンタクット参加（絶対禁止）","試合出場（Phase 6 移行後まで禁止）"],
       rehabMenu: [
-        { title: "フル・コンタクット練習（Level 5）", sets: "通常トレーニング参加", note: "医師の許可後に実施。許可書を必ず取得", details: "医師による許可を得た後のみ実施できます。タックル・コンタクットを含む通常練習に参加します。この段階（Level 5）が完了すれば試合復帰（Level 6）へ進みます。24時間以上無症状であれば競技復帰が可能です。" },
-        { title: "試合復帰（Level 6）",             sets: "通常参加",              note: "リハビリ完了。受傷後120時間以降が目安", details: "GRTPの最終段階です。通常の競技生活に戻ります。2回目の脳震盪は1回目より軽微な衝撃で発症しやすくかつ重症化するリスクがあります。再発した場合は即座に活動を中止し、より慎重なプロセスを踏んでください。" },
-        { title: "再発予防教育",                   sets: "1回",                  note: "ヘッドギア・プレーテクニックの見直し", details: "選手本人・保護者・コーチ向けに脳震盪の症状・対処法・報告義務を教育します。脳震盪を隠して競技継続する文化が最大のリスクです。次の脳震盪はより小さな衝撃で発症しうることを全員が理解する必要があります。" },
+        { title: "フル・コンタクット練習", sets: "通常トレーニング参加", note: "医師の許可書を必ず取得してから開始", details: "医師による許可を得た後のみ実施できます。タックル・コンタクットを含む通常練習に参加します。医師の許可書はトレーナー・コーチが保管することを推奨します。練習後24時間以内に症状増悪がなければ機能評価の「コンタクット練習で症状増悪なし」を「可」にしてPhase 6（試合復帰）へ進みます。" },
+        { title: "再発予防教育",           sets: "1回",                  note: "選手・保護者・コーチ全員で実施", details: "選手本人・保護者・コーチ向けに脳震盪の症状・対処法・報告義務を教育します。脳震盪を隠して競技継続する文化が最大のリスクです。次の脳震盪はより小さな衝撃で発症しうることを全員が理解する必要があります。ヘッドギアは脳震盪を完全には予防できないことも伝えてください。" },
       ],
       timeline: [
-        { week: "Level 5（96時間以降）", goal: "フル・コンタクット練習", activity: "医師許可後・通常トレーニング" },
-        { week: "Level 6（120時間以降）", goal: "試合復帰・リハビリ完了", activity: "通常の競技参加" },
+        { week: "Phase 5（96時間以降）",   goal: "フル・コンタクット練習で無症状",  activity: "医師許可後・タックル含む通常練習" },
+        { week: "Phase 6（移行条件）",     goal: "24時間無症状の確認",              activity: "無症状確認後に試合復帰（Phase 6）" },
       ],
-      alert: "GRTPは各レベル最低24時間の実施が必要です。症状再発で即レベル後退。次の脳震盪のリスクが高まるため再発予防教育を必ず実施してください。",
+      alert: "コンタクット練習後24時間以内に症状が増悪した場合はPhase 4に戻ること。医師許可なしのコンタクット参加は絶対に禁止です。",
+    },
+    {
+      // GRTP Phase 6（目安：受傷後120時間以降）— 試合復帰・リハビリ完了
+      summary: "フル・コンタクット練習で無症状を確認。GRTP Phase 6：試合復帰が可能です。リハビリ完了。通常の競技生活に戻りますが、再発予防と症状の自己管理を継続してください。",
+      okList: ["試合出場・通常の競技参加","全ての練習・コンタクットプレー","予防教育の継続"],
+      ngList: ["症状が出た場合に無視して継続すること（即中止・報告）"],
+      rehabMenu: [
+        { title: "試合復帰（Phase 6）",    sets: "通常参加",      note: "リハビリ完了。受傷後最短120時間が目安", details: "GRTPの最終段階です。通常の競技生活に戻ります。2回目の脳震盪は1回目より軽微な衝撃で発症しやすく、かつ重症化するリスクがあります。再発した場合は即座に活動を中止し、より慎重なプロセスを踏んでください。" },
+        { title: "症状の自己管理（継続）", sets: "毎試合・練習後", note: "違和感・頭痛があれば即報告", details: "試合・練習後に頭痛・めまい・霧感などの症状がないか自己確認する習慣を継続します。軽微でも症状があれば即座に活動を中止し医師・トレーナーに報告してください。脳震盪を隠して継続することは次の重篤な損傷につながります。" },
+      ],
+      timeline: [
+        { week: "Phase 6（120時間以降）", goal: "試合復帰・リハビリ完了", activity: "通常の競技参加" },
+        { week: "復帰後",                 goal: "再発予防・自己管理継続", activity: "症状出現時は即中止・報告" },
+      ],
+      alert: "GRTPはフェーズ最低24時間ずつ。症状再発で即フェーズ後退。次の脳震盪リスクが高まるため再発予防教育を選手・チーム全員で必ず実施してください。",
     },
   ];
 
   const d = data[idx];
   return {
-    phase: `GRTP Level ${idx + 1}：${GRTP_PHASES[idx].name}`,
+    phase: `GRTP Phase ${idx + 1}：${GRTP_PHASES[idx].name}`,
     currentPhaseIndex: idx,
     totalPhases: 6,
     summary: d.summary,
@@ -791,13 +808,13 @@ function concussionPlan(p: GeneratePlanParams): RehabPlan {
     phaseTracker: GRTP_PHASES,
     clinicalGuidance:
       "段階的競技復帰プロトコル（GRTP）\n" +
-      "Level 1（24hrs）：完全安静。無症状であること。医師管理外は最低14日間。\n" +
-      "Level 2（48hrs）：軽度有酸素運動（ウォーキング・水泳・固定自転車エルゴ、最大予測心拍数70%未満）。レジスタンス禁止。\n" +
-      "Level 3（72hrs）：スポーツ固有の運動（ランニング・ドリル）。頭部衝撃禁止。\n" +
-      "Level 4（96hrs）：非コンタクット練習ドリル（例：パス・ドリル）。漸進的レジスタンス開始可。\n" +
-      "Level 5（96hrs+）：フル・コンタクット練習（医師許可後）。\n" +
-      "Level 6（120hrs）：競技復帰。リハビリ完了。\n" +
-      "※ 各レベルは最低24時間実施し無症状を確認してから次レベルへ。症状出現で即レベル後退。",
+      "Phase 1（24hrs）：完全安静。無症状であること。医師管理外は最低14日間。\n" +
+      "Phase 2（48hrs）：軽度有酸素運動（ウォーキング・水泳・固定自転車エルゴ、最大予測心拍数70%未満）。レジスタンス禁止。\n" +
+      "Phase 3（72hrs）：スポーツ固有の運動（ランニング・ドリル）。頭部衝撃禁止。\n" +
+      "Phase 4（96hrs）：非コンタクット練習ドリル（例：パス・ドリル）。漸進的レジスタンス開始可。\n" +
+      "Phase 5（96hrs+）：フル・コンタクット練習（医師許可後）。\n" +
+      "Phase 6（120hrs）：競技復帰。リハビリ完了。\n" +
+      "※ 各フェーズは最低24時間実施し無症状を確認してから次フェーズへ。症状出現で即フェーズ後退。",
   };
 }
 
