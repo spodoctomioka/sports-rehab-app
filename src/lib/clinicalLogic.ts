@@ -597,7 +597,6 @@ function anklePlan(p: GeneratePlanParams): RehabPlan {
     rehabMenu: d.rehabMenu,
     timeline: td ? [...d.timeline, { week: "目標日", goal: "大会・試合", activity: `${td}日後` }] : d.timeline,
     alert: d.alert,
-    showPolice: days <= 3,
     showOttawaRule: days <= 7 && p.grade !== "I",
   };
 }
@@ -1279,23 +1278,30 @@ function groinPlan(p: GeneratePlanParams): RehabPlan {
 // ---- Main Entry Point ----
 
 export function generatePlan(p: GeneratePlanParams): RehabPlan {
+  let result: RehabPlan;
   switch (p.injuryId) {
     case "hamstring":
     case "quadriceps":
-      return muscleStrainPlan(p);
+      result = muscleStrainPlan(p); break;
     case "ankle_sprain":
-      return anklePlan(p);
+      result = anklePlan(p); break;
     case "concussion":
-      return concussionPlan(p);
+      result = concussionPlan(p); break;
     case "elbow_throwing":
-      return elbowThrowingPlan(p);
+      result = elbowThrowingPlan(p); break;
     case "slap_lesion":
-      return slapPlan(p);
+      result = slapPlan(p); break;
     case "heat_stroke":
-      return heatStrokePlan(p);
+      result = heatStrokePlan(p); break;
     case "groin":
-      return groinPlan(p);
+      result = groinPlan(p); break;
     default:
-      return genericPlan(p);
+      result = genericPlan(p);
   }
+  // POLICE: 脳震盪・熱中症以外の外傷で受傷7日以内に表示
+  const daysFromInjury = getDays(p.injuryDate);
+  if (p.injuryId !== "concussion" && p.injuryId !== "heat_stroke" && daysFromInjury <= 7) {
+    result = { ...result, showPolice: true };
+  }
+  return result;
 }
