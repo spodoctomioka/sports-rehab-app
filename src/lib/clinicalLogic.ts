@@ -41,6 +41,8 @@ export interface RehabPlan {
   clinicalGuidance?: string;
   /** 目標日逆算・進捗見通し */
   progressNote?: string;
+  /** 段階的投球プログラム：現在の推奨ステップ番号 */
+  throwingCurrentStep?: number;
 }
 
 export interface GeneratePlanParams {
@@ -145,10 +147,7 @@ export const GRADES_BY_INJURY: Partial<Record<InjuryId, GradeOption[]>> = {
     { value: "moderate", label: "中等度", desc: "UCL中等度損傷" },
     { value: "severe",   label: "重度",  desc: "UCL完全断裂（Tommy John）" },
   ],
-  concussion: [
-    { value: "simple",  label: "単純型", desc: "症状が7〜10日以内に消失" },
-    { value: "complex", label: "複雑型", desc: "症状が10日以上持続" },
-  ],
+  // concussion: グレード不要のため削除
   slap_lesion: [
     { value: "stable",   label: "安定型（デブリードマン）", desc: "後上方関節唇の不安定性なし・固定縫合不要" },
     { value: "unstable", label: "不安定型（縫合修復）",     desc: "前上方関節唇の不安定性あり・縫合アンカー固定" },
@@ -159,10 +158,10 @@ export const GRADES_BY_INJURY: Partial<Record<InjuryId, GradeOption[]>> = {
     { value: "III", label: "Ⅲ度（重症）",  desc: "意識障害・痙攣・肝腎機能障害（入院加療必要）" },
   ],
   groin: [
-    { value: "adductor",  label: "Adductor-related",  desc: "内転筋関連（Doha分類）" },
-    { value: "iliopsoas", label: "Iliopsoas-related",  desc: "腸腰筋関連（Doha分類）" },
-    { value: "inguinal",  label: "Inguinal-related",   desc: "鼠径部関連（Doha分類）" },
-    { value: "pubic",     label: "Pubic-related",      desc: "恥骨関連（Doha分類）" },
+    { value: "adductor",  label: "内転筋型",   desc: "内もも〜鼠径部の痛み（Adductor-related / Doha分類）" },
+    { value: "iliopsoas", label: "腸腰筋型",   desc: "股関節前面〜腸骨窩の痛み（Iliopsoas-related / Doha分類）" },
+    { value: "inguinal",  label: "鼠径部型",   desc: "脚の付け根・そけい管部の痛み（Inguinal-related / Doha分類）" },
+    { value: "pubic",     label: "恥骨型",     desc: "恥骨〜下腹部の痛み（Pubic-related / Doha分類）" },
   ],
 };
 
@@ -269,7 +268,7 @@ export const TESTS_BY_INJURY: Record<InjuryId, TestItem[]> = {
   concussion: [
     { id: "okHeadache",  title: "頭痛なし",     description: "安静時・運動時の頭痛が完全に消失しているか",       icon: "🧠" },
     { id: "okCog",       title: "認知症状なし", description: "霧がかかった感・集中困難・記憶障害がないか",       icon: "💭" },
-    { id: "okBalance",   title: "バランス正常", description: "BESS（Balance Error Scoring System）が正常か",    icon: "⚖" },
+    { id: "okBalance",   title: "バランス正常", description: "【自己テスト】①両足揃え・目を閉じ20秒 ②片脚立ち（利き足でない方）・目を閉じ20秒 ③タンデム立位（前後に一直線に足を並べる）・目を閉じ20秒。いずれもふらつき・転倒・バランス崩れが受傷前と比べて明らかに増えていなければ「可」。自信がなければ「不可」を選択。", icon: "⚖" },
     { id: "okExercise",  title: "運動増悪なし", description: "軽度有酸素運動後も症状増悪がないか",             icon: "🏃" },
     { id: "okSleep",     title: "睡眠正常",     description: "睡眠障害（過眠・不眠）がないか",                 icon: "😴" },
   ],
@@ -277,7 +276,7 @@ export const TESTS_BY_INJURY: Record<InjuryId, TestItem[]> = {
     { id: "okPainFree",  title: "安静時疼痛なし",   description: "安静時・日常生活動作での肩部疼痛が消失しているか",                           icon: "😴" },
     { id: "okROM",       title: "外旋ROM正常",      description: "外旋可動域が健側と同等か（投球に必要な外旋が制限されていないか）",             icon: "↕" },
     { id: "okStrength",  title: "腱板筋力正常",     description: "外旋・外転筋力が健側比80%以上か（等速性筋力またはMMT）",                     icon: "💪" },
-    { id: "okThrow",     title: "軽投球動作可",     description: "疼痛・apprehensionなく10〜20m程度の軽投球動作が可能か",                     icon: "⚾" },
+    { id: "okThrow",     title: "軽投球動作可",     description: "痛みや恐怖感（投げることへの不安・腕が抜けそうな感覚）なく10〜20m程度の軽投球が可能か",                     icon: "⚾" },
     { id: "okFullThrow", title: "全力投球可",       description: "疼痛・不安感なく競技距離での全力投球が可能か（医師許可後）",                   icon: "🏅" },
   ],
   heat_stroke: [
@@ -712,19 +711,19 @@ function concussionPlan(p: GeneratePlanParams): RehabPlan {
       alert: "脳震盪後の「Second Impact Syndrome」は生命の危険があります。症状が残る間は絶対に競技復帰しないでください。",
     },
     {
-      summary: "頭痛は消失しましたが、認知症状またはバランス障害が残っています。この段階ではまだ有酸素運動（GRTP）は開始できません。日常生活レベルにとどめ、スマホ・PC・テレビなど脳への認知ストレスを極力避けてください。",
-      okList: ["室内での軽い日常生活動作","短い散歩（15分以内・症状増悪なければ）","安静・十分な睡眠","薄暗く静かな環境での休息"],
-      ngList: ["スマートフォン・PC・テレビの長時間使用（30分以上）","読書・勉強・集中を要する作業","スポーツ・体育参加","騒がしい環境・強い光・大きな音"],
+      summary: "頭痛が消失し、GRTP Phase 2に進んでいます。ウォーキング・固定自転車・水泳などの軽度有酸素運動を開始してください。認知症状やバランス障害が残っている場合は強度を低く保ち、症状が増悪しないことを確認しながら進めます（CISG 2023）。",
+      okList: ["ウォーキング（20〜30分・軽強度）","固定自転車（低抵抗・軽負荷）","水泳（軽度・クロール等）","スクリーン利用の段階的解禁（30分単位で増やす）","十分な睡眠・規則正しい生活"],
+      ngList: ["ランニング・インターバルなど高強度有酸素運動","筋力トレーニング（重量使用）","スポーツ特異的動作（まだ不可）","コンタクットプレー","症状増悪を無視した無理な継続"],
       rehabMenu: [
-        { title: "スクリーン回避（認知的安静）", sets: "1日中",   note: "スマホ・PC・テレビは原則禁止または1回30分以内", details: "スクリーン（スマートフォン・PC・テレビ）の使用を原則禁止、または1回30分以内にとどめます。明るい光・スクリーンの刺激が認知症状・頭痛を悪化させます。読書・勉強・集中を要する作業も同様に制限します。この制限は脳が必要な認知機能を回復するための重要な時間です。回復してから次第に解禁していきます。" },
-        { title: "症状日記記録",             sets: "1日3回",   note: "頭痛・めまい・霧感を0〜10でスコアリング", details: "頭痛・めまい・霧感（ブレインフォグ）・光過敏・音過敏・集中困難を0〜10のスコアで記録します。朝・昼・夜の3回記録することで症状の変化パターンを把握します。症状が増悪した活動・環境は翌日から避けてください。記録は医師・トレーナーへの経過報告にも活用できます。" },
-        { title: "軽い散歩（可能時）",       sets: "15分以内", note: "症状増悪なければ屋外を静かにゆっくり", details: "認知症状・バランス障害が残る段階では有酸素運動は行わず、軽い散歩にとどめてください。屋外での短い散歩は脳震盪後の回復を助ける可能性がありますが、15分を上限とし症状増悪があれば即中止します。有酸素運動（ジョギング・自転車等）は認知症状・バランスが完全に正常化してから開始します。" },
+        { title: "ウォーキング（軽度有酸素）", sets: "20〜30分",        note: "心拍最大の50〜70%以下。症状増悪なければ継続", details: "CISG 2023に基づくGRTP Phase 2では、ウォーキング・固定自転車・水泳などの軽度有酸素運動が推奨されています。心拍数は最大の50〜70%以下を目安に保ちます。運動中・運動後24時間以内に頭痛・めまい・吐き気が増悪した場合は即中止しPhase 1に戻ってください。症状増悪がなく24時間経過すればPhase 3へ進みます。" },
+        { title: "固定自転車（軽負荷）",       sets: "15〜20分",        note: "低抵抗・低速。屋外は転倒リスクがあるため固定式推奨", details: "固定自転車は転倒リスクがなく心拍数のコントロールがしやすいため、GRTP Phase 2に適した運動です。低抵抗・ゆっくりしたペースで開始し、症状がなければ継続します。屋外サイクリングは転倒による二次的頭部外傷のリスクがあるため、この段階では固定式が推奨です。" },
+        { title: "症状日記記録",              sets: "朝・運動後・就寝前", note: "頭痛・めまい・霧感を0〜10でスコアリング", details: "頭痛・めまい・霧感（ブレインフォグ）・光過敏・音過敏・集中困難を0〜10のスコアで記録します。運動後に症状スコアが増悪した場合は運動強度を下げるサインです。記録は医師・トレーナーへの経過報告にも活用できます。" },
       ],
       timeline: [
-        { week: "Phase 2",           goal: "認知症状・バランス完全消失", activity: "安静・スクリーン回避" },
-        { week: "Phase 3（移行条件）", goal: "全症状が正常化",           activity: "24時間症状なし確認後にのみ開始可" },
+        { week: "Phase 2",           goal: "軽度有酸素運動で症状増悪なし", activity: "ウォーキング・固定自転車・水泳" },
+        { week: "Phase 3（移行条件）", goal: "24時間症状増悪なし",           activity: "症状なし確認後にPhase 3開始" },
       ],
-      alert: "認知症状・バランス障害が残る間は有酸素運動（GRTP Phase 3）に進めません。スクリーン・学業・騒音などの認知ストレスを避け、完全消失を待ってから次フェーズへ進んでください。",
+      alert: "運動後24時間以内に頭痛・めまいなどの症状増悪があればPhase 1に戻り完全安静を再開してください。症状増悪がなく24時間経過すればPhase 3（スポーツ特異的運動）へ進みます（CISG 2023）。",
     },
     {
       summary: "基本的な認知・バランスは回復。有酸素運動で症状増悪がまだあります。スポーツ特異的な動作を非コンタクットで行うPhase 3です。",
@@ -1166,6 +1165,9 @@ function slapPlan(p: GeneratePlanParams): RehabPlan {
     alert: d.alert,
     phaseTracker: SLAP_PHASES,
     throwingProgram: idx >= 2 ? SLAP_THROWING_PROGRAM : undefined,
+    throwingCurrentStep: idx >= 2
+      ? (idx === 2 ? 1 : !okFullThrow ? 3 : 5)
+      : undefined,
   };
 }
 

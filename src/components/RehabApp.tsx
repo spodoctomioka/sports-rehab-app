@@ -294,10 +294,25 @@ function OttawaRuleBlock() {
 
 // ---- Throwing Program ----
 
-function ThrowingProgramBlock({ steps }: { steps: NonNullable<RehabPlan["throwingProgram"]> }) {
+function ThrowingProgramBlock({
+  steps,
+  currentStep,
+}: {
+  steps: NonNullable<RehabPlan["throwingProgram"]>;
+  currentStep?: number;
+}) {
   return (
     <Card>
       <SectionLabel>⚾ 段階的投球プログラム</SectionLabel>
+      {currentStep !== undefined && (
+        <div style={{
+          marginBottom: 12, padding: "8px 14px", borderRadius: 8,
+          background: "#ddeeff", border: `1px solid #80c0e0`,
+          fontSize: 13, color: BLUE, fontWeight: 600,
+        }}>
+          📍 現在の推奨ステップ：<strong>Step {currentStep}</strong>
+        </div>
+      )}
       <div style={{ overflowX: "auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
@@ -308,14 +323,30 @@ function ThrowingProgramBlock({ steps }: { steps: NonNullable<RehabPlan["throwin
             </tr>
           </thead>
           <tbody>
-            {steps.map((s) => (
-              <tr key={s.step} style={{ borderBottom: `1px solid ${BORDER}20` }}>
-                <td style={{ padding: "8px 10px", color: BLUE, fontWeight: 700 }}>{s.step}</td>
-                <td style={{ padding: "8px 10px", color: TEXT }}>{s.name}</td>
-                <td style={{ padding: "8px 10px", color: MUTED2 }}>{s.distance}</td>
-                <td style={{ padding: "8px 10px", color: MUTED2 }}>{s.reps}</td>
-              </tr>
-            ))}
+            {steps.map((s) => {
+              const isCurrent = currentStep !== undefined && s.step === currentStep;
+              const isDone    = currentStep !== undefined && s.step < currentStep;
+              return (
+                <tr key={s.step} style={{
+                  borderBottom: `1px solid ${BORDER}20`,
+                  background: isCurrent ? `${GREEN}14` : "transparent",
+                  border: isCurrent ? `1px solid ${GREEN}40` : undefined,
+                }}>
+                  <td style={{ padding: "8px 10px", fontWeight: 700, color: isCurrent ? GREEN : isDone ? MUTED2 : BLUE }}>
+                    {isDone ? "✓" : s.step}
+                    {isCurrent && (
+                      <span style={{
+                        marginLeft: 6, fontSize: 10, background: GREEN, color: "#fff",
+                        padding: "1px 6px", borderRadius: 4, fontWeight: 700,
+                      }}>現在</span>
+                    )}
+                  </td>
+                  <td style={{ padding: "8px 10px", color: isCurrent ? GREEN : isDone ? MUTED2 : TEXT, fontWeight: isCurrent ? 700 : 400 }}>{s.name}</td>
+                  <td style={{ padding: "8px 10px", color: isDone ? MUTED2 : MUTED2 }}>{s.distance}</td>
+                  <td style={{ padding: "8px 10px", color: isDone ? MUTED2 : MUTED2 }}>{s.reps}</td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
@@ -415,7 +446,10 @@ export default function RehabApp() {
     }
   }, [injuryId]);
 
-  const step1Valid = !!sport && !!age && !!injuryId && !!injuryDate && (usesJiss ? !!jissGrade : !!grade);
+  const isHeatStrokeIII = injuryId === "heat_stroke" && grade === "III";
+  const step1Valid = !!sport && !!age && !!injuryId && !!injuryDate &&
+    (usesJiss ? !!jissGrade : (gradeOptions.length > 0 ? !!grade : true)) &&
+    !isHeatStrokeIII;
   const step2Valid = tests.length > 0 && tests.every((t) => t.result !== null);
 
   const days = injuryDate
@@ -579,7 +613,7 @@ export default function RehabApp() {
             </Card>
 
             {/* Grade */}
-            {injuryId && (
+            {injuryId && gradeOptions.length > 0 && (
               <Card>
                 <SectionLabel>{usesJiss ? "JISS分類（型 × 度）" : "重症度グレード"}</SectionLabel>
                 {usesJiss ? (
@@ -598,23 +632,62 @@ export default function RehabApp() {
                     </div>
                   </>
                 ) : (
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                    {gradeOptions.map((g) => (
-                      <button key={g.value} onClick={() => setGrade(g.value)} style={{
-                        flex: "1 1 auto", minWidth: 100, padding: "10px 8px", borderRadius: 8, fontSize: 13,
-                        fontWeight: grade === g.value ? 700 : 400,
-                        border: `1.5px solid ${grade === g.value ? GREEN : BORDER}`,
-                        background: grade === g.value ? OK_BG : "transparent",
-                        color: grade === g.value ? GREEN : MUTED2,
-                        cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s", textAlign: "center",
+                  <>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                      {gradeOptions.map((g) => (
+                        <button key={g.value} onClick={() => setGrade(g.value)} style={{
+                          flex: "1 1 auto", minWidth: 100, padding: "10px 8px", borderRadius: 8, fontSize: 13,
+                          fontWeight: grade === g.value ? 700 : 400,
+                          border: `1.5px solid ${grade === g.value ? GREEN : BORDER}`,
+                          background: grade === g.value ? OK_BG : "transparent",
+                          color: grade === g.value ? GREEN : MUTED2,
+                          cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s", textAlign: "center",
+                        }}>
+                          <div style={{ fontWeight: 700 }}>{g.label}</div>
+                          <div style={{ fontSize: 11, color: MUTED2, marginTop: 2 }}>{g.desc}</div>
+                        </button>
+                      ))}
+                    </div>
+                    {/* Groin guidance note */}
+                    {injuryId === "groin" && (
+                      <div style={{
+                        marginTop: 12, padding: "10px 14px", borderRadius: 8,
+                        background: "#fff8e8", border: "1px solid #d4a020",
+                        fontSize: 12, color: "#7a5000", lineHeight: 1.8,
                       }}>
-                        <div style={{ fontWeight: 700 }}>{g.label}</div>
-                        <div style={{ fontSize: 11, color: MUTED2, marginTop: 2 }}>{g.desc}</div>
-                      </button>
-                    ))}
-                  </div>
+                        💡 <strong>分類が分からない場合：</strong>担当医師に
+                        「グロインペインはDOHA分類でどの型ですか？」と確認してください。
+                        適切な分類に基づいたリハビリが早期復帰に重要です。
+                      </div>
+                    )}
+                  </>
                 )}
               </Card>
+            )}
+
+            {/* Heat Stroke Grade III emergency alert */}
+            {isHeatStrokeIII && (
+              <div style={{
+                background: "#fff0f0", border: "2px solid #cc2244",
+                borderRadius: 14, padding: "20px 22px",
+                display: "flex", alignItems: "flex-start", gap: 14,
+              }}>
+                <span style={{ fontSize: 30, flexShrink: 0 }}>🚨</span>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 900, color: "#cc2244", marginBottom: 8 }}>
+                    熱中症 Ⅲ度（重症）— 緊急対応が必要です
+                  </div>
+                  <div style={{ fontSize: 14, color: "#7a0022", lineHeight: 1.8 }}>
+                    意識障害・痙攣・臓器障害を伴う重症熱中症は<strong>入院加療が必須</strong>です。<br />
+                    直ちに <strong style={{ fontSize: 16 }}>119番通報</strong> を行い、
+                    救急車が到着するまでの間、体を冷やし続けてください（頸部・腋窩・鼠径部に氷嚢）。<br />
+                    <span style={{ fontSize: 12, marginTop: 6, display: "block", color: "#9a0030" }}>
+                      ※ このアプリでの自己リハビリ管理は対象外です。すべての判断を担当医師の指示に従ってください。
+                      （日本救急医学会 熱中症ガイドライン2023）
+                    </span>
+                  </div>
+                </div>
+              </div>
             )}
 
             {/* Dates */}
@@ -974,7 +1047,12 @@ export default function RehabApp() {
             </Card>
 
             {/* Throwing Program */}
-            {plan.throwingProgram && <ThrowingProgramBlock steps={plan.throwingProgram} />}
+            {plan.throwingProgram && (
+              <ThrowingProgramBlock
+                steps={plan.throwingProgram}
+                currentStep={plan.throwingCurrentStep}
+              />
+            )}
 
             {/* Alert */}
             {plan.alert && (
