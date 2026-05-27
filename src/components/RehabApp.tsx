@@ -194,7 +194,7 @@ function PhaseTracker({ phases, currentIdx }: { phases: PhaseTrackerItem[]; curr
 function PoliceBlock() {
   const items = [
     { letter: "P", word: "Protection",      desc: "保護：ギプス・スポンジパッドで患部を保護" },
-    { letter: "O", word: "Optimal Loading", desc: "最適荷重：痛みのない範囲での早期荷重開始" },
+    { letter: "OL", word: "Optimal Loading", desc: "最適荷重：痛みのない範囲での早期荷重開始" },
     { letter: "I", word: "Ice",             desc: "冷却：20分 × 4〜6回/日。タオル越しに" },
     { letter: "C", word: "Compression",     desc: "圧迫：弾性包帯で遠位から近位に巻く" },
     { letter: "E", word: "Elevation",       desc: "挙上：心臓より高く。就寝時も継続" },
@@ -535,7 +535,20 @@ export default function RehabApp() {
               <Card>
                 <SectionLabel>{usesJiss ? "JISS分類（型 × 度）" : "重症度グレード"}</SectionLabel>
                 {usesJiss ? (
-                  <JissGrid value={jissGrade} onChange={setJissGrade} />
+                  <>
+                    <JissGrid value={jissGrade} onChange={setJissGrade} />
+                    <div style={{
+                      marginTop: 12, padding: "10px 14px", borderRadius: 8,
+                      background: "#fff8e8", border: "1px solid #d4a020",
+                      fontSize: 12, color: "#7a5000", lineHeight: 1.8,
+                    }}>
+                      💡 <strong>JISS分類が分からない場合：</strong>
+                      スポーツドクターなら画像（MRI等）を見て教えてくれます。一般整形外科では伝わらないこともあるため、
+                      「JISS分類（型と度）を教えてください」と直接伝えてみてください。
+                      それでも分からなければ、<strong>画像CD（DVDやUSB）を持参</strong>してスポーツドクターを受診することをお勧めします。
+                      JISS分類が分からないと正確な復帰目安が算出できません。
+                    </div>
+                  </>
                 ) : (
                   <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                     {gradeOptions.map((g) => (
@@ -731,6 +744,19 @@ export default function RehabApp() {
               <PhaseTracker phases={plan.phaseTracker} currentIdx={plan.currentPhaseIndex} />
             )}
 
+            {/* Progress Note / Reverse Countdown */}
+            {plan.progressNote && (
+              <Card style={{ borderColor: "#80c8a8", background: "#f0faf5" }}>
+                <SectionLabel>📊 復帰逆算チェック</SectionLabel>
+                <p style={{
+                  fontSize: 13, color: "#1a4030", lineHeight: 2.0,
+                  whiteSpace: "pre-line" as const,
+                }}>
+                  {plan.progressNote}
+                </p>
+              </Card>
+            )}
+
             {/* Clinical Guidance / Evidence */}
             {plan.clinicalGuidance && (
               <Card style={{ borderColor: "#b8cfe8", background: "#f4f8fd" }}>
@@ -780,9 +806,20 @@ export default function RehabApp() {
             <Card>
               <SectionLabel>🏋 今週のリハビリメニュー</SectionLabel>
               {plan.rehabMenu.length > 0 && (
-                <p style={{ fontSize: 11, color: MUTED, marginBottom: 12 }}>
-                  💡 詳細ボタンをタップすると解説・注意点を確認できます
-                </p>
+                <>
+                  <div style={{
+                    marginBottom: 12, padding: "9px 13px", borderRadius: 8,
+                    background: "#fff3d0", border: "1px solid #c89010",
+                    fontSize: 12, color: "#7a5000", lineHeight: 1.7,
+                  }}>
+                    ⚠️ <strong>全エクササイズ共通：</strong>
+                    実施中に患部に<strong>鋭い痛み・元の部位の痛み</strong>が出た場合は直ちに中止してください。
+                    軽い筋肉痛・張り感は許容範囲ですが、無理は厳禁です。
+                  </div>
+                  <p style={{ fontSize: 11, color: MUTED, marginBottom: 12 }}>
+                    💡 詳細ボタンをタップすると解説・注意点を確認できます
+                  </p>
+                </>
               )}
               <div style={{ display: "flex", flexDirection: "column", gap: 0 }}>
                 {plan.rehabMenu.map((item, i) => {
