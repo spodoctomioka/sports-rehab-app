@@ -222,6 +222,126 @@ function PoliceBlock() {
   );
 }
 
+// ---- Ottawa Ankle Rule Diagram ----
+
+function AnkleDiagram() {
+  const RED    = "#c0392b";
+  const ZONE   = "rgba(192,57,43,0.14)";
+  const SKIN   = "#f0dfc0";
+  const SKIN_B = "#c49a6a";
+  const GOLD   = "#ffd080";
+  const LBL    = "#6b3800";
+  const MUTED  = "#aaa";
+
+  return (
+    <svg
+      viewBox="0 0 520 215"
+      style={{ width: "100%", maxWidth: 520, display: "block", margin: "6px auto 0" } as React.CSSProperties}
+      aria-label="Ottawa Ankle Rule 圧痛確認ポイント図"
+    >
+      {/* ── Panel headings ── */}
+      <text x="122" y="14" textAnchor="middle" fontSize="12" fontWeight="700" fill={LBL}>外側面（外くるぶし）</text>
+      <text x="394" y="14" textAnchor="middle" fontSize="12" fontWeight="700" fill={LBL}>内側面（内くるぶし）</text>
+      <line x1="260" y1="18" x2="260" y2="208" stroke="#e0d0b0" strokeWidth="1" />
+
+      {/* Ground lines */}
+      <line x1="18"  y1="182" x2="246" y2="182" stroke="#ccc" strokeWidth="1" />
+      <line x1="274" y1="182" x2="508" y2="182" stroke="#ccc" strokeWidth="1" />
+
+      {/* ── LATERAL VIEW (外側) ── */}
+      {/* Lower leg / 腓骨 */}
+      <rect x="87" y="19" width="27" height="68" rx="7" fill={SKIN} stroke={SKIN_B} strokeWidth="1.5" />
+      <text x="100" y="38" textAnchor="middle" fontSize="9" fill={MUTED}>腓骨</text>
+
+      {/* Lateral malleolus (外踝) */}
+      <ellipse cx="88" cy="100" rx="17" ry="14" fill={GOLD} stroke={SKIN_B} strokeWidth="1.5" />
+      <text x="110" y="103" fontSize="11" fontWeight="600" fill={LBL}>外踝</text>
+
+      {/* Heel */}
+      <ellipse cx="46" cy="150" rx="28" ry="21" fill={SKIN} stroke={SKIN_B} strokeWidth="1.5" />
+      {/* Foot body */}
+      <rect x="43" y="145" width="172" height="32" rx="10" fill={SKIN} stroke={SKIN_B} strokeWidth="1.5" />
+      {/* 5th metatarsal base (第5中足骨基部) — dorsolateral bump */}
+      <ellipse cx="158" cy="143" rx="13" ry="9" fill={GOLD} stroke={SKIN_B} strokeWidth="1.5" />
+      {/* Toes */}
+      <ellipse cx="210" cy="152" rx="13" ry="9" fill={SKIN} stroke={SKIN_B} strokeWidth="1.5" />
+
+      {/* 6cm zone — posterior edge of lateral malleolus, going up from its tip */}
+      <rect x="62" y="65" width="14" height="48" fill={ZONE} rx="2" />
+      <line x1="62" y1="65"  x2="74" y2="65"  stroke={RED} strokeWidth="2" />
+      <line x1="62" y1="113" x2="74" y2="113" stroke={RED} strokeWidth="2" />
+      <line x1="65" y1="65"  x2="65" y2="113" stroke={RED} strokeWidth="2" strokeDasharray="3,2" />
+      <text x="57" y="93"  textAnchor="end" fontSize="11" fontWeight="700" fill={RED}>6cm</text>
+      <text x="57" y="68"  textAnchor="end" fontSize="10" fill={RED}>↑</text>
+      <text x="57" y="115" textAnchor="end" fontSize="10" fill={RED}>↓</text>
+
+      {/* ① — lateral malleolus posterior zone */}
+      <circle cx="74" cy="90" r="12" fill={RED} />
+      <text x="74" y="95" textAnchor="middle" fontSize="13" fontWeight="900" fill="white">①</text>
+
+      {/* ④ — 5th metatarsal base */}
+      <circle cx="158" cy="136" r="12" fill={RED} />
+      <text x="158" y="141" textAnchor="middle" fontSize="13" fontWeight="900" fill="white">④</text>
+
+      {/* Foot direction labels */}
+      <text x="46"  y="178" textAnchor="middle" fontSize="10" fill={MUTED}>踵</text>
+      <text x="210" y="178" textAnchor="middle" fontSize="10" fill={MUTED}>趾 →</text>
+      <text x="158" y="164" textAnchor="middle" fontSize="9"  fill={LBL}>第5中足骨基部</text>
+
+      {/* ── MEDIAL VIEW (内側) ── */}
+      {/* Lower leg / 脛骨 */}
+      <rect x="358" y="19" width="27" height="68" rx="7" fill={SKIN} stroke={SKIN_B} strokeWidth="1.5" />
+      <text x="371" y="38" textAnchor="middle" fontSize="9" fill={MUTED}>脛骨</text>
+
+      {/* Medial malleolus (内踝) */}
+      <ellipse cx="359" cy="100" rx="17" ry="14" fill={GOLD} stroke={SKIN_B} strokeWidth="1.5" />
+      <text x="380" y="103" fontSize="11" fontWeight="600" fill={LBL}>内踝</text>
+
+      {/* Heel */}
+      <ellipse cx="317" cy="150" rx="28" ry="21" fill={SKIN} stroke={SKIN_B} strokeWidth="1.5" />
+      {/* Foot body — medial side has visible arch */}
+      <path
+        d="M 292,158 C 315,147 362,146 392,152 L 476,152 L 476,174 L 292,174 Z"
+        fill={SKIN} stroke={SKIN_B} strokeWidth="1.5"
+      />
+      {/* Navicular (舟状骨) — medial arch dorsal prominence */}
+      <ellipse cx="390" cy="149" rx="13" ry="9" fill={GOLD} stroke={SKIN_B} strokeWidth="1.5" />
+      {/* Toes */}
+      <ellipse cx="472" cy="155" rx="13" ry="9" fill={SKIN} stroke={SKIN_B} strokeWidth="1.5" />
+
+      {/* 6cm zone — posterior edge of medial malleolus */}
+      <rect x="336" y="65" width="14" height="48" fill={ZONE} rx="2" />
+      <line x1="336" y1="65"  x2="348" y2="65"  stroke={RED} strokeWidth="2" />
+      <line x1="336" y1="113" x2="348" y2="113" stroke={RED} strokeWidth="2" />
+      <line x1="339" y1="65"  x2="339" y2="113" stroke={RED} strokeWidth="2" strokeDasharray="3,2" />
+      <text x="330" y="93"  textAnchor="end" fontSize="11" fontWeight="700" fill={RED}>6cm</text>
+      <text x="330" y="68"  textAnchor="end" fontSize="10" fill={RED}>↑</text>
+      <text x="330" y="115" textAnchor="end" fontSize="10" fill={RED}>↓</text>
+
+      {/* ② — medial malleolus posterior zone */}
+      <circle cx="348" cy="90" r="12" fill={RED} />
+      <text x="348" y="95" textAnchor="middle" fontSize="13" fontWeight="900" fill="white">②</text>
+
+      {/* ③ — navicular */}
+      <circle cx="390" cy="141" r="12" fill={RED} />
+      <text x="390" y="146" textAnchor="middle" fontSize="13" fontWeight="900" fill="white">③</text>
+
+      {/* Foot direction labels */}
+      <text x="317" y="178" textAnchor="middle" fontSize="10" fill={MUTED}>踵</text>
+      <text x="472" y="178" textAnchor="middle" fontSize="10" fill={MUTED}>趾 →</text>
+      <text x="390" y="168" textAnchor="middle" fontSize="9"  fill={LBL}>舟状骨</text>
+
+      {/* ── Legend ── */}
+      <circle cx="88"  cy="204" r="7" fill={RED} />
+      <text x="99" y="208" fontSize="10" fill={LBL}>押すポイント（圧痛確認）</text>
+      <rect x="264" y="197" width="12" height="12" fill={ZONE} rx="2" />
+      <line x1="264" y1="197" x2="276" y2="197" stroke={RED} strokeWidth="1.5" />
+      <line x1="264" y1="209" x2="276" y2="209" stroke={RED} strokeWidth="1.5" />
+      <text x="281" y="208" fontSize="10" fill={LBL}>後縁6cm圧痛ゾーン</text>
+    </svg>
+  );
+}
+
 // ---- Ottawa Ankle Rule ----
 
 function OttawaRuleBlock() {
@@ -246,25 +366,8 @@ function OttawaRuleBlock() {
         以下のいずれかを満たす場合は<strong>スポーツ整形外科にてX線撮影</strong>を推奨：
       </p>
 
-      {/* 足首の圧痛部位イラスト（テキスト図） */}
-      <div style={{
-        background: "#fdf5e0", border: "1px solid #e8c850", borderRadius: 10,
-        padding: "12px 14px", marginBottom: 14, fontSize: 12,
-      }}>
-        <div style={{ fontWeight: 700, color: "#7a5000", marginBottom: 8, fontSize: 12 }}>
-          🦶 圧痛確認ポイント（親指でしっかり押してください）
-        </div>
-        <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-          {/* 足首側面図 */}
-          <div style={{ fontFamily: "monospace", fontSize: 12, color: "#5a4000", lineHeight: 1.9, flex: "0 0 auto" }}>
-            <div style={{ color: "#888", fontSize: 11, marginBottom: 2 }}>── 側面から見た足首 ──</div>
-            <div>　 ② 内踝 ｜ 外踝 ①</div>
-            <div>　　　　▼ 後縁　▼</div>
-            <div>　　  ↑6cm  ↑6cm  ← ここを押す</div>
-            <div style={{ marginTop: 4 }}>③ 舟状骨（内側足背）　④ 第5中足骨基部（小指側）</div>
-          </div>
-        </div>
-      </div>
+      {/* 足首の圧痛部位SVG図 */}
+      <AnkleDiagram />
 
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {points.map((zone) => (
