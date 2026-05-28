@@ -989,16 +989,23 @@ function genericPlan(p: GeneratePlanParams): RehabPlan {
   }
 
   // ---- 汎用プラン（ACL以外） ----
-  const isAcute    = days <= 7;
-  const isSubacute = days <= 21;
+  // テスト通過数でフェーズを決定（時間ではなく機能状態を優先）
+  const passCount  = p.tests.filter((tr) => tr.result === true).length;
+  const totalTests = p.tests.length;
+  const isAcute    = passCount === 0;
+  const isSubacute = passCount > 0 && passCount < totalTests;
 
   const phase = isAcute ? "急性期" : isSubacute ? "亜急性期〜回復期" : "機能回復〜スポーツ復帰期";
+
+  // グレード表示ラベル（英語valueではなく日本語labelを使用）
+  const gradeOption = (GRADES_BY_INJURY[p.injuryId] ?? []).find((g) => g.value === p.grade);
+  const gradeLabel  = gradeOption?.label ?? p.grade;
 
   return {
     phase,
     currentPhaseIndex: isAcute ? 0 : isSubacute ? 1 : 2,
     totalPhases: 3,
-    summary: `${label}（${p.grade}）の${phase}${surgNote}です。症状と画像所見に基づいて段階的なリハビリプランを進めます。`,
+    summary: `${label}（${gradeLabel}）の${phase}${surgNote}です。機能評価の結果に基づいてリハビリプランを進めます。`,
     okList: isAcute
       ? ["安静・保護（損傷部位）","アイシング（20分 × 4〜6回）","疼痛なし範囲の自動運動","上肢または下肢の代替トレーニング"]
       : isSubacute
