@@ -28,11 +28,13 @@ const DOC_BORD = "#c89010";
 const DOC_TEXT = "#7a5000";
 
 const AGE_GROUPS = [
-  { id: "u10",    label: "〜10歳" },
-  { id: "u15",    label: "〜15歳" },
-  { id: "u20",    label: "〜20歳" },
-  { id: "u30",    label: "〜30歳" },
-  { id: "senior", label: "それ以上" },
+  { id: "elem_lo",  label: "小学低学年（〜9歳）" },
+  { id: "elem_hi",  label: "小学高学年（〜12歳）" },
+  { id: "jhs",      label: "中学生" },
+  { id: "hs",       label: "高校生" },
+  { id: "college",  label: "大学生" },
+  { id: "adult",    label: "社会人" },
+  { id: "pro",      label: "プロ" },
 ] as const;
 
 const S = {
