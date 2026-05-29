@@ -504,7 +504,235 @@ function muscleStrainPlan(p: GeneratePlanParams): RehabPlan {
     }
   }
 
-  // ④ 目標日逆算・進捗見通し
+  // ④ アメリカンフットボール特化コンテンツ
+  const isAF = p.sport === "american_football";
+  if (isAF) {
+    const pos = (p.position ?? "").toUpperCase();
+    const isWR = pos.includes("WR");
+    const isRB = pos.includes("RB");
+    const isLB = pos.includes("LB");
+    const isDB = pos.includes("DB");
+    const isSkill = isWR || isRB || isDB;
+
+    // 練習参加レベル参照カード（フェーズ2以降に挿入）
+    const participationCard: RehabMenuItem = {
+      title: "🏈 練習参加レベルガイド（AF）",
+      sets: "段階的に引き上げ",
+      note: "Lv.0（リハのみ）→ Lv.6（ゲーム出場）で管理",
+      details:
+        "🔴 Lv.0：リハビリのみ（グラウンド不参加）\n" +
+        "🟠 Lv.1：チームウォームアップのみ参加\n" +
+        "🟡 Lv.2：個人ドリル（ポジション別・Rep制限あり）\n" +
+        "🟢 Lv.3：7 on 7（ノーコンタクト）\n" +
+        "🔵 Lv.4：フルプラクティス（コンタクト制限あり）\n" +
+        "🟣 Lv.5：スクリメージ（フルコンタクト）\n" +
+        "⚫ Lv.6：ゲーム出場\n\n" +
+        "1段階ずつ上げ、翌日に疼痛・腫脹の増悪がなければ次レベルへ進む。",
+    };
+
+    // ── Phase 3（data[2]・圧痛あり）：Lv.1→2、低負荷ポジションドリル ──
+    data[2].okList.push("練習参加レベル目標：Lv.1（ウォームアップ）→ Lv.2（個人ドリル）");
+    data[2].rehabMenu.unshift({ ...participationCard });
+
+    if (isWR || isDB) {
+      data[2].rehabMenu.push({
+        title: "ルートランニング開始（低負荷ルート限定）",
+        sets: "1シリーズ2〜3本",
+        note: "ヒッチ・スラント・クイックアウト（5yd以内）のみ。プレー間は歩いて戻る",
+        details:
+          "ハムストリングスへの負荷が低い短距離ルートから再開します。\n\n" +
+          "【許可ルート（≤5yd）】\n" +
+          "・ヒッチ（3yd）：前に出て止まる\n" +
+          "・スラント（4〜5yd）：斜め前への切り込み\n" +
+          "・クイックアウト（5yd）：真っ直ぐ出てサイドへ\n\n" +
+          "【禁止ルート】\n" +
+          "・in/dig・カール・カムバック（10yd以上）→ 次フェーズ\n" +
+          "・ポスト・コーナー・フライ（フルスプリント要）→ 2フェーズ先\n\n" +
+          "【Rep管理】\n" +
+          "1シリーズ2〜3本。プレーとプレーの間は必ず歩いて戻る。\n" +
+          "疼痛が出たらその日の走行は終了。翌日の腫脹・張りを確認してから再開。",
+      });
+    } else if (isRB) {
+      data[2].rehabMenu.push({
+        title: "バックフィールドドリル（直線系のみ）",
+        sets: "1シリーズ3〜5本",
+        note: "ドロー・ダイブのみ。スウィープ・カットバック禁止",
+        details:
+          "直線的な動作のみのランプレーパターンから再開します。\n\n" +
+          "【許可プレー】\n" +
+          "・ドロー（直線→加速）\n" +
+          "・ダイブ（ギャップへの直線突入）\n" +
+          "・ハンドオフ受け取りのみのルーティン\n\n" +
+          "【禁止プレー】\n" +
+          "・スウィープ（横への全力走）→ 次フェーズ\n" +
+          "・カットバック（方向転換）→ 次フェーズ\n" +
+          "・フルコンタクト → 2フェーズ先\n\n" +
+          "【Rep管理】\n" +
+          "1シリーズ3〜5本。走行後は立ち止まって患部の感覚を確認。",
+      });
+    } else if (isLB) {
+      data[2].rehabMenu.push({
+        title: "カバレッジドロップ・ゾーン読みドリル",
+        sets: "5〜10分",
+        note: "バックペダル・シャッフルのみ。ブリッツラッシュ禁止",
+        details:
+          "最大負荷がかかるブリッツを避け、カバレッジ動作から再開します。\n\n" +
+          "【許可動作】\n" +
+          "・バックペダル（後退走）\n" +
+          "・シャッフルステップ（横移動）\n" +
+          "・ゾーン移動ドリル（指示でゾーンへ移動）\n\n" +
+          "【禁止動作】\n" +
+          "・ブリッツラッシュ（最大加速）→ 次フェーズ\n" +
+          "・タックル（コンタクト）→ 2フェーズ先\n\n" +
+          "7 on 7参加はまだ禁止。ウォームアップ＋個人カバレッジドリルまで。",
+      });
+    } else {
+      data[2].rehabMenu.push({
+        title: "ポジション個人ドリル（低強度）",
+        sets: "5〜10分",
+        note: "スプリント・コンタクト禁止。スタンス・ステップワークのみ",
+        details:
+          "ポジション固有の基本動作を低強度で再開します。\n\n" +
+          "OL/DL：スタンス・ステップワーク（ハーフスピード）\n" +
+          "QB：フットワーク・ショートスロー（ドロップバックのみ）\n" +
+          "K/P：アプローチ動作（インパクトなし）\n\n" +
+          "最大加速・コンタクトが含まれるドリルは禁止です。",
+      });
+    }
+
+    // ── Phase 4（data[3]・抵抗運動痛あり）：Lv.2→3、中強度ドリル ──
+    data[3].okList.push("練習参加レベル目標：Lv.2（個人ドリル）→ Lv.3（7 on 7）");
+    data[3].rehabMenu.unshift({ ...participationCard });
+
+    const ladderIdx = data[3].rehabMenu.findIndex(m => m.title.includes("ラダー"));
+
+    if (isWR || isDB) {
+      const midItem: RehabMenuItem = {
+        title: "ルートランニング中距離解禁（in/dig・カール・カムバック）",
+        sets: "1シリーズ5〜8本",
+        note: "10〜12ydルート追加可。ポスト・コーナー・フライはまだ禁止",
+        details:
+          "中距離ルートを追加し、7 on 7への参加を検討する段階です。\n\n" +
+          "【新たに許可するルート（10〜12yd）】\n" +
+          "・in/dig：深く走りインサイドへカット\n" +
+          "・カール：外へ走りフロントへ向き直る\n" +
+          "・カムバック：外へ走り止まってQBへ向き直る\n\n" +
+          "【まだ禁止ルート】\n" +
+          "・ポスト（15〜20yd） / コーナー（15〜20yd）\n" +
+          "・フライ/ゴー（20yd以上フルスプリント）\n\n" +
+          "【Rep管理】\n" +
+          "1シリーズ5〜8本。7 on 7参加可（ポスト・フライ系は除外）。\n" +
+          "翌日に疼痛・腫脹の増悪がなければ次フェーズへ進む。",
+      };
+      if (ladderIdx >= 0) data[3].rehabMenu[ladderIdx] = midItem;
+      else data[3].rehabMenu.push(midItem);
+    } else if (isRB) {
+      const rbMid: RehabMenuItem = {
+        title: "スウィープ・アウトサイドラン解禁・カットバック（1カット）",
+        sets: "1シリーズ5〜8本",
+        note: "横走り追加。7 on 7ランプレー参加可",
+        details:
+          "横方向への走りと1回のカットバックを解禁します。\n\n" +
+          "【新たに許可するプレー】\n" +
+          "・スウィープ（横への加速→縦への転換）\n" +
+          "・アウトサイドラン（ピッチアウト系）\n" +
+          "・カットバック（1カットまで）\n\n" +
+          "【まだ禁止】\n" +
+          "・多重カット（ジャーク系ラン）→ 次フェーズ\n" +
+          "・フルコンタクト → 次フェーズ\n\n" +
+          "7 on 7のランプレー部分への参加可能。\n" +
+          "ランアフターキャッチ（RAC）の加速も可だが急停止は疼痛確認しながら。",
+      };
+      if (ladderIdx >= 0) data[3].rehabMenu[ladderIdx] = rbMid;
+      else data[3].rehabMenu.push(rbMid);
+    } else if (isLB) {
+      const lbMid: RehabMenuItem = {
+        title: "ブリッツラッシュ解禁（90%スピード）・ダミータックル",
+        sets: "5〜8本",
+        note: "最大加速は次フェーズ。タックルはダミーのみ",
+        details:
+          "ブリッツラッシュを90%スピードで解禁し、タックルはダミーから始めます。\n\n" +
+          "【許可動作】\n" +
+          "・ブリッツラッシュ（90%スピード・接触なし）\n" +
+          "・ゾーンカバレッジ（全方向）\n" +
+          "・ダミーへのタックル（コントロールドコンタクト）\n\n" +
+          "【まだ禁止】\n" +
+          "・対人フルコンタクト → 次フェーズ\n" +
+          "・スクリメージ → 2フェーズ先\n\n" +
+          "7 on 7参加可。フルプラクティスの個人ドリルまで段階的に拡大。",
+      };
+      if (ladderIdx >= 0) data[3].rehabMenu[ladderIdx] = lbMid;
+      else data[3].rehabMenu.push(lbMid);
+    }
+
+    // ── Phase 5（data[4]・心理準備期）：Lv.3→4、全解禁 ──
+    data[4].okList.push("練習参加レベル目標：Lv.3（7 on 7）→ Lv.4（フルプラクティス）");
+    data[4].rehabMenu.unshift({ ...participationCard });
+
+    const sportDrillIdx = data[4].rehabMenu.findIndex(m => m.title.includes("競技特異的ドリル"));
+
+    if (isWR || isDB) {
+      const fullItem: RehabMenuItem = {
+        title: "全ルート解禁（ポスト・コーナー・フライ）",
+        sets: "通常Rep数（1シリーズ10〜15本）",
+        note: "全ルート可。7 on 7 → フルプラクティス → スクリメージへ",
+        details:
+          "全てのルートが解禁され、フルプラクティス参加が目標です。\n\n" +
+          "【解禁ルート】\n" +
+          "・ポスト（15〜20yd：フルスプリント→斜め内カット）\n" +
+          "・コーナー（15〜20yd：フルスプリント→斜め外カット）\n" +
+          "・フライ/ゴー（20yd以上：最大スプリント継続）\n" +
+          "・シーム（縦への深いルート）\n\n" +
+          "【練習参加移行順序】\n" +
+          "7 on 7フル参加 → フルプラクティス（コンタクトあり）\n" +
+          "→ スクリメージ → ゲーム出場\n\n" +
+          "翌日に増悪がなければ医師・トレーナーとゲーム出場日程を確認。",
+      };
+      if (sportDrillIdx >= 0) data[4].rehabMenu[sportDrillIdx] = fullItem;
+      else data[4].rehabMenu.push(fullItem);
+    } else if (isRB) {
+      const rbFull: RehabMenuItem = {
+        title: "全ランプレー解禁・コンタクト段階的復帰",
+        sets: "通常Rep数",
+        note: "多重カット含む全プレー可。コンタクト：ダミー→対人→スクリメージ",
+        details:
+          "全てのランプレーを解禁し、接触を段階的に加えます。\n\n" +
+          "【許可プレー】\n" +
+          "・全ランプレー（多重カット含む）\n" +
+          "・ランアフターキャッチ（RAC）のフル走行・急停止\n\n" +
+          "【コンタクト移行順序】\n" +
+          "1. ダミーへのタックル受け\n" +
+          "2. コントロールドコンタクト（相手が力を抑制）\n" +
+          "3. フルコンタクト（スクリメージ）\n\n" +
+          "フルプラクティス → スクリメージ → ゲーム出場の順で段階的に復帰。",
+      };
+      if (sportDrillIdx >= 0) data[4].rehabMenu[sportDrillIdx] = rbFull;
+      else data[4].rehabMenu.push(rbFull);
+    } else if (isLB) {
+      const lbFull: RehabMenuItem = {
+        title: "フルコンタクト解禁（タックル・ブリッツ全開放）",
+        sets: "通常練習量",
+        note: "最大加速ブリッツ・対人タックル解禁。スクリメージ参加へ",
+        details:
+          "全ての動作を解禁し、スクリメージへの参加が目標です。\n\n" +
+          "【解禁動作】\n" +
+          "・最大加速ブリッツラッシュ\n" +
+          "・対人タックル（フルコンタクト）\n" +
+          "・ブリッツ後の追走・急停止\n\n" +
+          "【練習参加移行順序】\n" +
+          "フルプラクティス（コンタクト制限なし）\n" +
+          "→ スクリメージ → ゲーム出場\n\n" +
+          "翌日に増悪がなければ医師・トレーナーとゲーム出場日程を確認。",
+      };
+      if (sportDrillIdx >= 0) data[4].rehabMenu[sportDrillIdx] = lbFull;
+      else data[4].rehabMenu.push(lbFull);
+    }
+
+    // ── Phase 6（data[5]・完全復帰）：Lv.6 ──
+    data[5].okList.push("練習参加レベル：Lv.6 ゲーム出場可");
+  }
+
+  // ⑤ 目標日逆算・進捗見通し
   const daysFromInjury  = getDays(p.injuryDate);
   const jissTargetDays  = bw * 7;
   const jissRemainingDays = Math.max(0, jissTargetDays - daysFromInjury);
@@ -669,6 +897,188 @@ function anklePlan(p: GeneratePlanParams): RehabPlan {
       alert: "足関節捻挫の慢性不安定性は将来の変形性関節症リスクを高めます。完全復帰後も予防継続を。",
     },
   ];
+
+  // ── アメリカンフットボール特化コンテンツ（足関節捻挫）──
+  const isAF_ankle = p.sport === "american_football";
+  if (isAF_ankle) {
+    const pos = (p.position ?? "").toUpperCase();
+    const isWR_a  = pos.includes("WR");
+    const isRB_a  = pos.includes("RB");
+    const isLB_a  = pos.includes("LB");
+    const isDB_a  = pos.includes("DB");
+    const isOLDL  = pos.includes("OL") || pos.includes("DL");
+
+    const afPartCard: RehabMenuItem = {
+      title: "🏈 練習参加レベルガイド（AF）",
+      sets: "段階的に引き上げ",
+      note: "Lv.0（リハのみ）→ Lv.6（ゲーム出場）で管理",
+      details:
+        "🔴 Lv.0：リハビリのみ（グラウンド不参加）\n" +
+        "🟠 Lv.1：チームウォームアップのみ参加\n" +
+        "🟡 Lv.2：個人ドリル（ポジション別・Rep制限あり）\n" +
+        "🟢 Lv.3：7 on 7（ノーコンタクト）\n" +
+        "🔵 Lv.4：フルプラクティス（コンタクト制限あり）\n" +
+        "🟣 Lv.5：スクリメージ（フルコンタクト）\n" +
+        "⚫ Lv.6：ゲーム出場\n\n" +
+        "スパイク（cleats）着用時は足首への側方ストレスが増大するため、\n" +
+        "テーピング着用を全活動で徹底すること。",
+    };
+
+    // Phase 2（idx=1・亜急性期）：Lv.0→1、サポーター強調
+    data[1].okList.push("テーピング・ブレース：スパイク移行前にサポーターの種類を確認");
+    data[1].rehabMenu.unshift({ ...afPartCard });
+
+    // Phase 3（idx=2・機能回復期）：Lv.1→2、スパイク移行・カット開始
+    data[2].okList.push("練習参加レベル目標：Lv.1（ウォームアップ）→ Lv.2（個人ドリル）");
+    data[2].okList.push("スパイク移行：直線ジョグで疼痛なければスパイク着用ドリルへ");
+    data[2].rehabMenu.unshift({ ...afPartCard });
+
+    if (isWR_a || isDB_a) {
+      data[2].rehabMenu.push({
+        title: "スパイク着用でのカットパターン（低速）",
+        sets: "× 5〜8本",
+        note: "45°→90°カット順に。疼痛・不安定感が出たら即中止",
+        details:
+          "スパイクのグリップが足首に与える側方ストレスを確認しながら、低速のカットから再開します。\n\n" +
+          "【開始順序】\n" +
+          "1. スパイク着用での直線ジョグ\n" +
+          "2. 45°カット（低速）\n" +
+          "3. 90°カット（低速）\n" +
+          "4. ルートランニング（5yd以内・低速）\n\n" +
+          "スパイクはトレーナーより足首の回転ストレスが増大します。\n" +
+          "違和感・不安定感があればテーピングの巻き直し・強化を検討。テーピング着用必須。",
+      });
+    } else if (isRB_a) {
+      data[2].rehabMenu.push({
+        title: "スパイク着用でのバックフィールドルーティン（直線のみ）",
+        sets: "5〜8本",
+        note: "ハンドオフ→直線走のみ。横走り（スウィープ）は次フェーズ",
+        details:
+          "スパイク着用で直線ベースのRBドリルから再開します。\n\n" +
+          "【開始順序】\n" +
+          "1. スパイク直線ジョグ\n" +
+          "2. ハンドオフ受け取り→直線走\n" +
+          "3. ドロープレー（方向転換なし）全速\n\n" +
+          "スウィープなど横への急加速は足首への側方ストレスが大きいため次フェーズまで禁止。\n" +
+          "テーピング＋サポーター着用を推奨。",
+      });
+    } else if (isLB_a) {
+      data[2].rehabMenu.push({
+        title: "スパイク着用でのカバレッジドロップ",
+        sets: "5〜10分",
+        note: "バックペダル・シャッフル。スパイクでのグリップ感を確認",
+        details:
+          "スパイクを着用してカバレッジ動作を再開します。\n\n" +
+          "【開始順序】\n" +
+          "1. スパイク着用での直線走\n" +
+          "2. バックペダル（後退走）\n" +
+          "3. シャッフルステップ（横移動）\n" +
+          "4. ゾーン移動ドリル\n\n" +
+          "シャッフル時に足首が外へ崩れる感覚がないか確認。\n" +
+          "疼痛・不安定感があれば即中止しテーピングを強化。",
+      });
+    } else if (isOLDL) {
+      data[2].rehabMenu.push({
+        title: "スパイク着用でのスタンス・ステップワーク",
+        sets: "10〜15分",
+        note: "広いスタンスでの足首安定性確認。ラテラルステップから",
+        details:
+          "OL/DLは広いスタンスで足首に大きな偏荷重がかかります。\n\n" +
+          "【確認事項】\n" +
+          "・スタンス幅（肩幅より広め）での両脚安定\n" +
+          "・ラテラルステップ（横への1〜2歩）\n" +
+          "・パスラッシュ/パスブロックのフットワーク（ハーフスピード）\n\n" +
+          "ドライブブロック時の踏ん張りポジションでの安定性を重点確認。",
+      });
+    }
+
+    // Phase 4（idx=3・スポーツ準備期）：Lv.2→3、全速ドリル・7 on 7
+    data[3].okList.push("練習参加レベル目標：Lv.3（7 on 7）参加可");
+    data[3].rehabMenu.unshift({ ...afPartCard });
+
+    const afAgilIdx = data[3].rehabMenu.findIndex(m => m.title.includes("競技特異的アジリティ"));
+
+    if (isWR_a || isDB_a) {
+      const wrItem: RehabMenuItem = {
+        title: "ルートランニング全速・全ルート段階的解禁",
+        sets: "1シリーズ5〜8本",
+        note: "短→中→長ルートの順。テーピング着用必須",
+        details:
+          "ハムストリングス同様のルート進行で全速確認します。\n\n" +
+          "【解禁順序】\n" +
+          "ヒッチ・スラント（5yd以内）→ in/dig・カール（10yd）\n" +
+          "→ ポスト・コーナー・フライ（15yd以上）\n\n" +
+          "7 on 7参加後も足首増悪なければ\n" +
+          "フルプラクティス → スクリメージ → ゲーム出場へ。\n" +
+          "テーピングはシーズン中全活動で継続を強く推奨。",
+      };
+      if (afAgilIdx >= 0) data[3].rehabMenu[afAgilIdx] = wrItem;
+      else data[3].rehabMenu.push(wrItem);
+    } else if (isRB_a) {
+      const rbItem: RehabMenuItem = {
+        title: "全ランプレー全速・7 on 7参加",
+        sets: "1シリーズ5〜8本",
+        note: "スウィープ・多重カット・RAC急停止。7 on 7参加可",
+        details:
+          "全速でのランプレーを確認し、7 on 7後にコンタクトへ移行。\n\n" +
+          "【確認動作】\n" +
+          "・スウィープ全速\n" +
+          "・多重カットバック\n" +
+          "・ランアフターキャッチ（RAC）急停止\n\n" +
+          "7 on 7参加後に増悪なければコンタクト段階的復帰へ。\n" +
+          "テーピング継続。",
+      };
+      if (afAgilIdx >= 0) data[3].rehabMenu[afAgilIdx] = rbItem;
+      else data[3].rehabMenu.push(rbItem);
+    } else if (isLB_a) {
+      const lbItem: RehabMenuItem = {
+        title: "追走・ブリッツ全速確認・ダミータックル",
+        sets: "5〜8本",
+        note: "最大加速ブリッツ→急停止→ダミーへのタックル。7 on 7参加可",
+        details:
+          "全速ブリッツとタックル準備動作を確認します。\n\n" +
+          "【確認動作】\n" +
+          "・最大加速ブリッツ→急停止\n" +
+          "・追走→引き剥がし動作\n" +
+          "・ダミーへのタックル（着地ストレス確認）\n\n" +
+          "7 on 7参加後に増悪なければ対人タックルへ進む。",
+      };
+      if (afAgilIdx >= 0) data[3].rehabMenu[afAgilIdx] = lbItem;
+      else data[3].rehabMenu.push(lbItem);
+    } else if (isOLDL) {
+      const olItem: RehabMenuItem = {
+        title: "ブロッキングドリル全速→シールドパッドコンタクト",
+        sets: "5〜10本",
+        note: "ドライブブロックの足踏み全速→パッドへのコンタクト",
+        details:
+          "ブロッキングの踏み込みと接触を段階的に加えます。\n\n" +
+          "【段階】\n" +
+          "1. ドライブブロックの足踏み（全速）\n" +
+          "2. バッグへのパスラッシュ（DL）/ パスブロック（OL）\n" +
+          "3. シールドパッドへのコンタクト（コントロールド）\n\n" +
+          "OL/DLはスプリントより駆動方向のストレスが高い。\n" +
+          "ドライブブロック時の踏ん張りでの安定性を特に確認。",
+      };
+      if (afAgilIdx >= 0) data[3].rehabMenu[afAgilIdx] = olItem;
+      else data[3].rehabMenu.push(olItem);
+    }
+
+    // Phase 5（idx=4・競技復帰期）：Lv.5→6、テーピング継続指導
+    data[4].okList.push("練習参加レベル：Lv.5（スクリメージ）→ Lv.6（ゲーム出場）");
+    data[4].rehabMenu.push({
+      title: "スパイク着用テーピング・シーズン中継続",
+      sets: "全練習・試合で着用",
+      note: "アメフトのスパイクは足首回転ストレスが特に高い。1年以上継続推奨",
+      details:
+        "足関節捻挫後の再受傷率はスポーツ活動中最大40%と報告されています。\n" +
+        "スパイクのグリップは地面への固定力が高く、方向転換時の足首への\n" +
+        "回転ストレスが他のフットウェアより顕著に大きくなります。\n\n" +
+        "【推奨】\n" +
+        "・試合：ATテーピング（最優先）\n" +
+        "・練習：Aircast等のブレースまたはテーピング\n\n" +
+        "シーズン終了まで全活動でのサポートを継続してください。",
+    });
+  }
 
   const d = data[idx];
 
