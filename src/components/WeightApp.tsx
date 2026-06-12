@@ -585,7 +585,16 @@ function sortPlayers(players:Player[],key:SortKey,dir:SortDir):Player[]{
         const ub=isThursdayUnmeasured(b)?0:1;
         c=ua-ub;break;
       }
-      case"team":c=(a.team??99)-(b.team??99);break;
+      case"team":{
+        const ta=a.team??99,tb=b.team??99;
+        if(ta!==tb){c=ta-tb;break;}
+        const gA=calcGrade(a.birthDate),gB=calcGrade(b.birthDate);
+        if(gA!==gB)return gB-gA; // 学年 3→1 固定（dir不問）
+        const rkT=(pos:string[])=>{if(!pos.length)return POS_ORDER.length;const idx=POS_ORDER.indexOf(pos[0]);return idx>=0?idx:POS_ORDER.length;};
+        const pd=rkT(a.position)-rkT(b.position);
+        if(pd!==0)return pd;
+        return a.name.localeCompare(b.name,"ja");
+      }
       // ── 複合ソート：学年（3→1固定） + 第2キー（dir適用）──
       case"grade_weight":{
         const gA=calcGrade(a.birthDate),gB=calcGrade(b.birthDate);
