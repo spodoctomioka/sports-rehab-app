@@ -2118,6 +2118,28 @@ function PinScreen({title,pinCheck,onUnlock,onBack}:{title:string;pinCheck:(p:st
   );
 }
 
+// ---- お祝い紙吹雪エフェクト ----
+function Confetti(){
+  const pieces=useRef(Array.from({length:70},(_,i)=>({
+    left:Math.random()*100,
+    delay:Math.random()*0.7,
+    dur:2.4+Math.random()*1.8,
+    color:[MAROON,GOLD,GREEN,"#2563EB","#B91C1C","#15803D","#92400E","#C9A227"][i%8],
+    size:7+Math.random()*8,
+    rot:Math.random()*360,
+    drift:(Math.random()-0.5)*120,
+  }))).current;
+  return(
+    <div style={{position:"fixed",inset:0,pointerEvents:"none",overflow:"hidden",zIndex:9999}}>
+      <style>{`@keyframes owls-fall{0%{transform:translateY(-12vh) translateX(0) rotate(0deg);opacity:1}100%{transform:translateY(112vh) translateX(var(--drift,0px)) rotate(720deg);opacity:0.85}}`}</style>
+      {pieces.map((p,i)=>(
+        <div key={i} style={{position:"absolute",top:0,left:`${p.left}%`,width:p.size,height:p.size*0.55,background:p.color,borderRadius:2,["--drift" as any]:`${p.drift}px`,animation:`owls-fall ${p.dur}s ${p.delay}s ease-in forwards`}}/>
+      ))}
+    </div>
+  );
+}
+const CELEBRATE_MSGS=["🎉 全員計測完了！ナイスワーク！","🦉 完璧です！チーム全員そろいました！","✨ お見事！全員分そろいました！","🏈 グッジョブ！全員の記録が完了！","🎊 全員コンプリート！おつかれさまです！"];
+
 // ---- Manager Bulk ----
 function ManagerBulkScreen({players,onSave,onBack}:{players:Player[];onSave:(u:Player[])=>void;onBack:()=>void;}){
   const today=todayStr();
@@ -2131,7 +2153,15 @@ function ManagerBulkScreen({players,onSave,onBack}:{players:Player[];onSave:(u:P
   const init=()=>{const m:Record<string,string>={};players.forEach(p=>{const e=p.measurements.find(x=>x.date===today);if(e)m[p.id]=String(e.weight);});return m;};
   const[weights,setW]=useState<Record<string,string>>(init);
   const[savedCount,setSC]=useState<number|null>(null);
+  const[allDone,setAllDone]=useState(false);
+  const[celebrate,setCelebrate]=useState(false);
+  const[celebrateMsg,setCelebrateMsg]=useState("");
   const filled=Object.values(weights).filter(w=>w&&!isNaN(parseFloat(w))).length;
+  useEffect(()=>{
+    if(!celebrate)return;
+    const t=setTimeout(()=>setCelebrate(false),5000);
+    return()=>clearTimeout(t);
+  },[celebrate]);
   const saveAll=()=>{
     let upd=[...players];let cnt=0;
     Object.entries(weights).forEach(([id,ws])=>{
@@ -2142,6 +2172,12 @@ function ManagerBulkScreen({players,onSave,onBack}:{players:Player[];onSave:(u:P
       upd[idx]={...p,measurements:nm};cnt++;
     });
     onSave(upd);setSC(cnt);
+    // 全員が本日分の記録を持っているか
+    const everyone=upd.length>0&&upd.every(p=>p.measurements.some(m=>m.date===today));
+    setAllDone(everyone);
+    if(everyone){setCelebrateMsg(CELEBRATE_MSGS[Math.floor(Math.random()*CELEBRATE_MSGS.length)]);setCelebrate(true);}
+    // 結果（保存メッセージ／お祝い）が見えるよう、再描画後に最上部へスクロール
+    if(typeof window!=="undefined")requestAnimationFrame(()=>window.scrollTo({top:0,behavior:"smooth"}));
   };
   let lastGrade=-1;let lastTeamM=-1;let lastThuSection:boolean|null=null;
   return(
@@ -2164,7 +2200,15 @@ function ManagerBulkScreen({players,onSave,onBack}:{players:Player[];onSave:(u:P
           </button>
         ))}
       </div>
-      {savedCount!==null&&<div style={{background:OK_BG,border:`1px solid ${OK_BRD}`,borderRadius:10,padding:"12px 16px",fontSize:14,color:GREEN,fontWeight:700}}>✓ {savedCount}人分の体重を保存しました！</div>}
+      {celebrate&&<Confetti/>}
+      {savedCount!==null&&(allDone?(
+        <div style={{background:`linear-gradient(135deg,${MAROON} 0%,#6d1320 100%)`,border:`2px solid ${GOLD}`,borderRadius:14,padding:"18px 16px",textAlign:"center",boxShadow:"0 4px 16px rgba(139,26,42,0.25)"}}>
+          <div style={{fontSize:18,fontWeight:800,color:"#fff",marginBottom:4}}>{celebrateMsg}</div>
+          <div style={{fontSize:13,color:GOLD,fontWeight:700}}>✓ {savedCount}人分の体重を保存しました</div>
+        </div>
+      ):(
+        <div style={{background:OK_BG,border:`1px solid ${OK_BRD}`,borderRadius:10,padding:"12px 16px",fontSize:14,color:GREEN,fontWeight:700}}>✓ {savedCount}人分の体重を保存しました！</div>
+      ))}
       {isThursday()&&savedCount===null&&<div style={{background:WN_BG,border:`1px solid ${WN_BRD}`,borderRadius:10,padding:"12px 16px",fontSize:14,color:"#7a5000",fontWeight:700}}>📅 今日は計測日（木曜日）です！</div>}
       {players.length===0?<Card><div style={{textAlign:"center",color:MUTED,fontSize:14,padding:"20px 0"}}>選手が登録されていません</div></Card>:(
         <Card style={{padding:"14px 16px"}}>
