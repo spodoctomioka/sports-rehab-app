@@ -17,3 +17,7 @@ npm-debug.log*
 
 # claude
 .claude/
+.vercel
+
+# 選手の個人データを含むバックアップ（Git管理外）
+backups/
