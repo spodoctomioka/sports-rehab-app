@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   scoreAnkleGo, interpretFull, scoreSLS, scoreSEBT, scoreSHT, scoreF8T,
   scoreFaamAdl, scoreFaamSport, scoreAlrRsi,
@@ -150,6 +150,27 @@ function SvgF8T() {
   );
 }
 
+// 解説図：public/ankle-go/{key}.png を JS プリロードし、読み込めた場合のみ写真へ差し替え。
+// 未配置（404）なら概念SVGを表示し続ける（壊れた画像アイコンを出さない・SSRレースも回避）。
+function TestFigure({ imgSrc, Svg, alt }: { imgSrc: string; Svg: React.FC; alt: string }) {
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => {
+    const img = new window.Image();
+    img.onload = () => setLoaded(true);
+    img.src = imgSrc;
+  }, [imgSrc]);
+  if (!loaded) return <Svg />;
+  return (
+    <img
+      src={imgSrc} alt={alt}
+      style={{
+        width: "100%", height: "auto", display: "block", objectFit: "contain",
+        background: "#f7fafc", borderRadius: 10, border: `1px solid ${BORDER}`,
+      } as React.CSSProperties}
+    />
+  );
+}
+
 const num = (s: string): number | null => (s.trim() === "" ? null : Number(s));
 
 export default function AnkleGoPage() {
@@ -158,16 +179,30 @@ export default function AnkleGoPage() {
   // 身体機能
   const [slsErr, setSlsErr]       = useState("");
   const [slsStable, setSlsStable] = useState(false);
-  const [comp, setComp] = useState(""); const [ant, setAnt] = useState(""); const [pm, setPm] = useState("");
+  // mSEBT：下肢長(cm)＋各方向のリーチ距離(cm)から自動で%換算
+  const [legLen, setLegLen] = useState("");
+  const [antCm, setAntCm] = useState(""); const [pmCm, setPmCm] = useState(""); const [plCm, setPlCm] = useState("");
   const [sebtStable, setSebtStable] = useState(false);
   const [sht, setSht] = useState(""); const [shtStable, setShtStable] = useState(false);
   const [f8t, setF8t] = useState(""); const [f8tStable, setF8tStable] = useState(false);
   // 質問紙
   const [adl, setAdl] = useState(""); const [sport, setSport] = useState(""); const [rsi, setRsi] = useState("");
 
+  // mSEBT 距離(cm)→正規化%（下肢長で除して×100）
+  const ll = num(legLen);
+  const llOk = ll != null && ll > 0;
+  const antV = num(antCm), pmV = num(pmCm), plV = num(plCm);
+  const pct = (cm: number | null): number | null => (llOk && cm != null ? (cm / (ll as number)) * 100 : null);
+  const antPct = pct(antV);
+  const pmPct  = pct(pmV);
+  const plPct  = pct(plV);
+  const compPct = (llOk && antV != null && pmV != null && plV != null)
+    ? ((antV + pmV + plV) / (3 * (ll as number))) * 100 : null;
+  const fmtPct = (v: number | null) => (v == null ? "—" : `${v.toFixed(1)}%`);
+
   const input: AnkleGoInput = {
     slsErrors: num(slsErr), slsStable,
-    sebtComp: num(comp), sebtAnt: num(ant), sebtPm: num(pm), sebtStable,
+    sebtComp: compPct, sebtAnt: antPct, sebtPm: pmPct, sebtStable,
     shtTime: num(sht), shtStable,
     f8tTime: num(f8t), f8tStable,
     faamAdl: num(adl), faamSport: num(sport), alrRsi: num(rsi),
@@ -210,7 +245,7 @@ export default function AnkleGoPage() {
             足関節捻挫からの<strong>競技復帰（RTS）準備</strong>を客観的に確認するスコアです（Picot 2023/2024）。
             <strong>6項目・満点25点</strong>で、身体機能4テスト（最大18点）と質問紙3項目（最大7点）から構成されます。
             <br /><br />
-            研究では<strong>受傷後2か月時点</strong>のスコアが、その後の経過（1年後にcoper＝再受傷なく機能良好になれるか）を予測する重要なチェックポイントとされています。
+            研究では<strong>受傷後2か月時点</strong>のスコアが、その後の経過（1年後に「良好回復＝再受傷なく機能が安定した状態」になれるか）を予測する重要なチェックポイントとされています。
             あくまで<strong>参考の自己評価ツール</strong>であり、最終的な復帰判断は医療者と行ってください。
           </p>
         </Card>
@@ -248,7 +283,7 @@ export default function AnkleGoPage() {
         {/* SLS */}
         <Card>
           <SectionLabel>SLS 片脚立位（最大3点）／ 現在 {slsScore}点</SectionLabel>
-          <SvgSLS />
+          <TestFigure imgSrc="/ankle-go/sls.png" Svg={SvgSLS} alt="SLS 片脚立位" />
           <p style={{ fontSize: 12.5, color: MUTED2, margin: "12px 0", lineHeight: 1.7 }}>
             患側で30秒の片脚立位を行い、バランスの崩れ（足を着く・支持脚がずれる・大きくふらつく等）を<strong>エラー数</strong>として数えます。
             採点：エラー <strong>3超→0点</strong>／<strong>1〜3→1点</strong>／<strong>0→2点</strong>。
@@ -260,16 +295,26 @@ export default function AnkleGoPage() {
         {/* mSEBT */}
         <Card>
           <SectionLabel>mSEBT（最大7点）／ 現在 {sebtScore}点</SectionLabel>
-          <SvgSEBT />
+          <TestFigure imgSrc="/ankle-go/msebt.png" Svg={SvgSEBT} alt="mSEBT 3方向リーチ" />
           <p style={{ fontSize: 12.5, color: MUTED2, margin: "12px 0", lineHeight: 1.7 }}>
             片脚立位で <strong>ANT（前）・PM（後内）・PL（後外）</strong> の3方向へできるだけ遠くリーチします。
-            v1では、下肢長で正規化済みの <strong>COMP%（3方向の総合）・ANT%・PM%</strong> を直接入力してください。
+            <strong>下肢長</strong>と各方向の<strong>リーチ距離（cm）</strong>を入力すると、自動で%に換算します。
             採点：COMP <strong>&lt;90→0／90〜95→2／&gt;95→4</strong>、ANT&gt;60で+1、PM&gt;90で+1。
           </p>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12 }}>
-            <NumberField label="COMP %" suffix="%" value={comp} onChange={setComp} />
-            <NumberField label="ANT %" suffix="%" value={ant} onChange={setAnt} />
-            <NumberField label="PM %" suffix="%" value={pm} onChange={setPm} />
+          <div style={{ marginBottom: 10 }}>
+            <NumberField label="下肢長（上前腸骨棘ASIS〜内果, cm）" suffix="cm" value={legLen} onChange={setLegLen} placeholder="例：88" />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 12 }}>
+            <NumberField label="ANT 距離" suffix="cm" value={antCm} onChange={setAntCm} />
+            <NumberField label="PM 距離" suffix="cm" value={pmCm} onChange={setPmCm} />
+            <NumberField label="PL 距離" suffix="cm" value={plCm} onChange={setPlCm} />
+          </div>
+          <div style={{
+            marginTop: 10, padding: "8px 12px", borderRadius: 8, background: "#f7fafc",
+            border: `1px solid ${BORDER}`, fontSize: 12.5, color: TEXT, lineHeight: 1.8,
+          }}>
+            自動換算 → COMP <strong>{fmtPct(compPct)}</strong>／ANT <strong>{fmtPct(antPct)}</strong>／PM <strong>{fmtPct(pmPct)}</strong>／PL {fmtPct(plPct)}
+            {!llOk && <span style={{ color: MUTED2 }}>（下肢長を入力すると換算されます）</span>}
           </div>
           <StableCheck checked={sebtStable} onChange={setSebtStable} />
         </Card>
@@ -277,7 +322,7 @@ export default function AnkleGoPage() {
         {/* SHT */}
         <Card>
           <SectionLabel>SHT サイドホップ（最大5点）／ 現在 {shtScore}点</SectionLabel>
-          <SvgSHT />
+          <TestFigure imgSrc="/ankle-go/sht.png" Svg={SvgSHT} alt="サイドホップ" />
           <p style={{ fontSize: 12.5, color: MUTED2, margin: "12px 0", lineHeight: 1.7 }}>
             一定幅（30cm）を片脚で左右に連続10往復（計10回）し、<strong>所要時間（秒）</strong>を計測します。
             採点：<strong>13秒超→0／10〜13→2／10未満→4</strong>。
@@ -289,7 +334,7 @@ export default function AnkleGoPage() {
         {/* F8T */}
         <Card>
           <SectionLabel>F8T フィギュアエイト（最大3点）／ 現在 {f8tScore}点</SectionLabel>
-          <SvgF8T />
+          <TestFigure imgSrc="/ankle-go/figure8.png" Svg={SvgF8T} alt="フィギュアエイト" />
           <p style={{ fontSize: 12.5, color: MUTED2, margin: "12px 0", lineHeight: 1.7 }}>
             5m間隔のコーン2つを<strong>8の字</strong>に片脚で2周し、<strong>所要時間（秒）</strong>を計測します。
             採点：<strong>18秒超→0／13〜18→1／13未満→2</strong>。
@@ -373,7 +418,7 @@ export default function AnkleGoPage() {
           {/* 共通注記 */}
           <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
             <div style={{ fontSize: 12, color: MUTED, lineHeight: 1.7, background: "#f4f6f8", border: `1px solid ${BORDER}`, borderRadius: 8, padding: "9px 12px" }}>
-              ⚧ <strong>女性はcoperになりにくい傾向</strong>があり、より慎重なRTS判断が必要です。
+              ⚧ <strong>女性は「良好回復（再受傷なく機能が安定した状態）」に至りにくい傾向</strong>があり、より慎重なRTS判断が必要です。
             </div>
             <div style={{ fontSize: 12, color: MUTED, lineHeight: 1.7, background: "#f4f6f8", border: `1px solid ${BORDER}`, borderRadius: 8, padding: "9px 12px" }}>
               📐 <strong>LSI（左右差）補助基準：</strong>RTSの補助として<strong>健側比（LSI）90%以上</strong>が望ましい。

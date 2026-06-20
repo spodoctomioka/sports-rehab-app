@@ -129,7 +129,7 @@ export function interpretFull(total: number): AnkleGoInterpretation {
     return {
       tier: "good",
       title: "復帰準備 良好の目安（12点以上）",
-      desc: "2か月時点でこのスコアの選手は、1年後にcoper（再受傷なく機能良好な状態）になる確率が約12倍と報告されています。最終判断は医療者と。",
+      desc: "2か月時点でこのスコアの選手は、1年後に「良好回復（再受傷なく機能が安定した状態）」に至る確率が約12倍と報告されています。最終判断は医療者と。",
       color: "#00875f",
     };
   }
@@ -137,7 +137,7 @@ export function interpretFull(total: number): AnkleGoInterpretation {
     return {
       tier: "more_rehab",
       title: "追加リハビリ推奨（8〜11点）",
-      desc: "11点以下ではcoperになる確率が低下します。不足している項目を中心に、もう一段階リハビリを継続してから再評価を。",
+      desc: "11点以下では「良好回復（再受傷なく機能が安定した状態）」に至る確率が低下します。不足している項目を中心に、もう一段階リハビリを継続してから再評価を。",
       color: "#c89010",
     };
   }
