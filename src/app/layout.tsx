@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Sports Rehab Planner | スポーツリハビリ計画支援",
-  description: "スポーツ医師・トレーナー向けリハビリテーション計画支援ツール",
+  title: "Sports Rehab Planner",
+  description: "スポーツ傷害リハビリ計画支援ツール",
+  robots: { index: false, follow: false },
 };
 
 export default function RootLayout({

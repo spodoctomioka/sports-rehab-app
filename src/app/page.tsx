@@ -1,5 +1,5 @@
-import RehabApp from "@/components/RehabApp";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return <RehabApp />;
+  redirect("/weight");
 }

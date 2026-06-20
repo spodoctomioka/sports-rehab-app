@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from "react";
 import {
-  SPORTS_DATA, INJURY_TYPES, TESTS_BY_INJURY, GRADES_BY_INJURY,
+  SPORTS_DATA, INJURY_TYPES, GRADES_BY_INJURY,
   JISS_TYPES, JISS_DEGREES, MUSCLE_STRAIN_PHASES, GRTP_PHASES,
-  generatePlan,
+  generatePlan, getTestsByInjury,
   type InjuryId, type SportId, type JissGrade, type JissType, type JissDegree,
   type TestResult, type RehabPlan, type PhaseTrackerItem,
 } from "@/lib/clinicalLogic";
@@ -37,6 +37,28 @@ const AGE_GROUPS = [
   { id: "pro",      label: "プロ" },
 ] as const;
 
+// 選手・保護者向け用語解説（プラン最下部に表示）
+const GLOSSARY: { term: string; desc: string }[] = [
+  { term: "患側 / 健側", desc: "患側＝ケガをした側。健側＝ケガをしていない反対側。左右を比べる基準になります。" },
+  { term: "痛み と 違和感 の違い", desc: "鋭い・ズキッとする・元の部位がはっきり痛む＝「痛み」（無理は禁物）。鈍い張り・気になる程度・突っ張る感じ＝「違和感」（多くは許容範囲）。迷ったら一段階手前で止めましょう。" },
+  { term: "負荷を上げる目安", desc: "「徐々に」「段階的に」とある項目は、1〜2回の練習ごとに、翌日に疼痛・違和感の悪化がなければ一段階上げます。悪化したら一段階戻します。" },
+  { term: "MMT（徒手筋力テスト）", desc: "手で抵抗をかけて筋力を見る検査。「健側比90%」は厳密な数値でなくてよく、左右で力の入り方に明らかな差がない程度が目安です。正確に知りたい場合は医療機関で測定します。" },
+  { term: "ROM（関節可動域）", desc: "関節の動く範囲（曲げ伸ばしなどの角度）。「ROM正常」＝左右でほぼ同じだけ動かせる状態。" },
+  { term: "等尺性収縮 / 等張性収縮", desc: "等尺性＝関節を動かさず力を入れる（壁を押す等）。等張性＝関節を動かしながら力を出す（ダンベルを上げ下げ等）。等尺性のほうが患部にやさしく、初期に使います。" },
+  { term: "RM（最大反復回数）", desc: "その回数で限界になる重さ。15RM＝15回で限界の軽め、8RM＝8回で限界のやや重め（数字が小さいほど高負荷）。フォームが崩れない重さで行います。" },
+  { term: "最大予測心拍数（70%）と測り方", desc: "おおよその上限心拍は「220−年齢」。その70%が目安（例：16歳→(220−16)×0.7≒143拍/分）。手首か首の脈を15秒数えて×4で測れます。心拍計がなければ『会話はできるが歌えない程度（トークテスト）』のやや手前で止めればOK。" },
+  { term: "レジスタンストレーニング", desc: "いわゆる筋力トレーニング（重り・チューブ・自重などで負荷をかける運動）。" },
+  { term: "固定自転車エルゴ", desc: "その場で漕ぐ固定式の自転車（エルゴメーター）。転倒なく心拍・負荷を管理しやすい有酸素運動です。" },
+  { term: "DOMS（遅発性筋痛）", desc: "運動の翌日〜2日後に出る筋肉痛。新しい運動の導入直後に出やすく、数日で治まります（ケガの痛みとは区別）。" },
+  { term: "LSI（左右対称性指数）", desc: "患側 ÷ 健側 ×100（%）。ホップ距離や筋力の左右差の指標で、90%以上が復帰の目安に使われます。" },
+  { term: "IAP（腹腔内圧）", desc: "お腹の中の圧。呼吸と腹横筋でお腹を適度に張らせると体幹が安定し、腰や股関節を守ります。" },
+  { term: "スクイーズテスト", desc: "両膝の間にボール等を挟んで内ももで押しつぶす検査。鼠径部・内ももの痛みの確認と経過観察に使います。" },
+  { term: "POLICE", desc: "急性外傷の応急対応：Protection（保護）/ Optimal Loading（適切な荷重）/ Ice（冷却）/ Compression（圧迫）/ Elevation（挙上）の頭文字。" },
+  { term: "GRTP（段階的競技復帰）", desc: "脳震盪などで使う、段階を踏んで競技に戻すプロトコル。各段階を最低24時間・無症状で過ごせたら次へ進みます。" },
+  { term: "Ankle-GO", desc: "足関節捻挫の復帰判定に使う、筋力・バランス・ホップなどを組み合わせた機能テストのまとまり。全項目クリアが復帰の目安です。" },
+  { term: "コペンハーゲンアダクション", desc: "内ももを鍛える代表的な運動。グロイン（鼠径部）の傷害予防・再発予防のエビデンスがあります。" },
+];
+
 const S = {
   card: {
     background: CARD,
@@ -60,6 +82,8 @@ const S = {
     padding: "10px 14px",
     fontSize: 15,
     width: "100%",
+    maxWidth: "100%",
+    boxSizing: "border-box" as const,
     outline: "none",
     fontFamily: "inherit",
   } as React.CSSProperties,
@@ -197,9 +221,9 @@ function PoliceBlock() {
   const items = [
     { letter: "P", word: "Protection",      desc: "保護：ギプス・スポンジパッドで患部を保護" },
     { letter: "OL", word: "Optimal Loading", desc: "最適荷重：痛みのない範囲での早期荷重開始" },
-    { letter: "I", word: "Ice",             desc: "冷却：20分 × 4〜6回/日。タオル越しに" },
+    { letter: "I", word: "Ice",             desc: "冷却：15分 × 4〜6回/日。氷嚢やビニール袋に入れた氷を直接しっかり押し当てる（タオル越しは冷却効果が低い）" },
     { letter: "C", word: "Compression",     desc: "圧迫：弾性包帯で遠位から近位に巻く" },
-    { letter: "E", word: "Elevation",       desc: "挙上：心臓より高く。就寝時も継続" },
+    { letter: "E", word: "Elevation",       desc: "挙上：下肢のケガは足の下に枕や丸めた布団を置いて少し高くする。座っている時も台に足を置く。上肢は患部を心臓より高く保つ" },
   ];
   return (
     <Card style={{ borderColor: `${BLUE}50` }}>
@@ -323,9 +347,13 @@ function ThrowingProgramBlock({
                       }}>現在</span>
                     )}
                   </td>
-                  <td style={{ padding: "8px 10px", color: isCurrent ? GREEN : isDone ? MUTED2 : TEXT, fontWeight: isCurrent ? 700 : 400 }}>{s.name}</td>
-                  <td style={{ padding: "8px 10px", color: isDone ? MUTED2 : MUTED2 }}>{s.distance}</td>
-                  <td style={{ padding: "8px 10px", color: isDone ? MUTED2 : MUTED2 }}>{s.reps}</td>
+                  <td style={{ padding: "8px 10px", color: isCurrent ? GREEN : isDone ? MUTED2 : TEXT, fontWeight: isCurrent ? 700 : 400 }}>
+                    <div>{s.name}</div>
+                    {s.week && <div style={{ fontSize: 11, color: MUTED2, fontWeight: 400, marginTop: 2 }}>🗓 {s.week}</div>}
+                    {s.note && <div style={{ fontSize: 11, color: DOC_TEXT, background: DOC_BG, border: `1px solid ${DOC_BORD}`, borderRadius: 4, padding: "2px 6px", marginTop: 4, fontWeight: 400, display: "inline-block" }}>🏈 {s.note}</div>}
+                  </td>
+                  <td style={{ padding: "8px 10px", color: MUTED2, whiteSpace: "nowrap" }}>{s.distance}</td>
+                  <td style={{ padding: "8px 10px", color: MUTED2 }}>{s.reps}</td>
                 </tr>
               );
             })}
@@ -396,6 +424,7 @@ function JissGrid({ value, onChange }: { value: JissGrade | null; onChange: (g: 
 
 export default function RehabApp() {
   const [step, setStep]             = useState(0);
+  const [showIntro, setShowIntro]   = useState(true);
   const [sport, setSport]           = useState<SportId | "">("");
   const [position, setPosition]     = useState("");
   const [age, setAge]               = useState("");
@@ -408,6 +437,8 @@ export default function RehabApp() {
   const [tests, setTests]           = useState<TestResult[]>([]);
   const [plan, setPlan]             = useState<RehabPlan | null>(null);
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
+  const [showOttawa, setShowOttawa] = useState(false);
+  const [showGlossary, setShowGlossary] = useState(false);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -415,6 +446,11 @@ export default function RehabApp() {
   const currentSport  = SPORTS_DATA.find((x) => x.id === sport);
   const usesJiss      = currentInjury?.usesJiss ?? false;
   const gradeOptions  = injuryId ? (GRADES_BY_INJURY[injuryId as InjuryId] ?? []) : [];
+
+  // ステップ／イントロ切り替え時はページ最上部から表示する
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [step, showIntro]);
 
   useEffect(() => {
     setPosition("");
@@ -424,9 +460,17 @@ export default function RehabApp() {
     setGrade("");
     setJissGrade(null);
     if (injuryId) {
-      setTests(TESTS_BY_INJURY[injuryId as InjuryId].map((t) => ({ id: t.id, result: null })));
+      // 腰椎分離症はレベル（高校生以下／大学生以上）で評価テスト構成が変わる
+      setTests(getTestsByInjury(injuryId as InjuryId, age).map((t) => ({ id: t.id, result: null })));
     }
   }, [injuryId]);
+
+  // レベル変更時、テスト構成が変わる傷害（腰椎分離症）はテストを再初期化する
+  useEffect(() => {
+    if (injuryId) {
+      setTests(getTestsByInjury(injuryId as InjuryId, age).map((t) => ({ id: t.id, result: null })));
+    }
+  }, [age]);
 
   const isHeatStrokeIII = injuryId === "heat_stroke" && grade === "III";
   const step1Valid = !!sport && !!age && !!injuryId && !!injuryDate &&
@@ -463,7 +507,13 @@ export default function RehabApp() {
   function handleReset() {
     setStep(0); setSport(""); setPosition(""); setAge(""); setInjuryId(""); setGrade("");
     setJissGrade(null); setInjuryDate(""); setSurgeryDate(""); setTargetDate("");
-    setTests([]); setPlan(null); setExpandedItems(new Set());
+    setTests([]); setPlan(null); setExpandedItems(new Set()); setShowOttawa(false);
+  }
+
+  // 左上ロゴ／タイトルクリックで最初（イントロ）に戻る
+  function goHome() {
+    handleReset();
+    setShowIntro(true);
   }
 
   function toggleExpanded(i: number) {
@@ -474,8 +524,19 @@ export default function RehabApp() {
     });
   }
 
-  function setTestResult(id: string, result: boolean | "doctor_pending") {
-    setTests((prev) => prev.map((t) => (t.id === id ? { ...t, result } : t)));
+  // 脳震盪のGRTPのみ「前段階クリアが前提」の順序ゲート（ある段階を不可にすると以降も自動的に不可）。
+  // 他傷害は各評価が独立しうる（例：圧痛はあるが抵抗運動痛なし）ため、カスケードは適用しない。
+  const isSequentialGate = injuryId === "concussion";
+
+  function setTestResult(id: string, result: boolean | "doctor_pending" | "discomfort") {
+    setTests((prev) => {
+      const idx = prev.findIndex((t) => t.id === id);
+      return prev.map((t, i) => {
+        if (i === idx) return { ...t, result };
+        if (isSequentialGate && result !== true && i > idx) return { ...t, result: false };
+        return t;
+      });
+    });
   }
 
   const injuryAreas = ["下肢", "体幹", "上肢", "頭部", "全身"] as const;
@@ -488,7 +549,12 @@ export default function RehabApp() {
         display: "flex", alignItems: "center", justifyContent: "space-between",
         background: BG, position: "sticky", top: 0, zIndex: 10,
       }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <div
+          onClick={goHome}
+          role="button"
+          title="最初に戻る"
+          style={{ display: "flex", alignItems: "center", gap: 12, cursor: "pointer" }}
+        >
           <div style={{
             width: 34, height: 34, borderRadius: 8,
             background: `linear-gradient(135deg, ${GREEN}, ${BLUE})`,
@@ -499,20 +565,28 @@ export default function RehabApp() {
             <div style={{ fontSize: 11, color: MUTED }}>スポーツ傷害リハビリ計画支援ツール</div>
           </div>
         </div>
-        <StepBar step={step} />
+        {!showIntro && <StepBar step={step} />}
       </div>
 
       <div style={{ maxWidth: 700, margin: "0 auto", padding: "28px 20px" }}>
 
-        {/* ================= STEP 0 ================= */}
-        {step === 0 && (
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-            <div>
-              <h1 style={{ fontSize: 26, fontWeight: 900, marginBottom: 4 }}>傷害情報を入力</h1>
-              <p style={{ color: MUTED, fontSize: 14 }}>スポーツ・ケガの種類・グレードを選択してリハビリプランを作成します。</p>
+        {/* ================= INTRO ================= */}
+        {showIntro && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
+            <div style={{ textAlign: "center", padding: "24px 0 8px" }}>
+              <div style={{
+                width: 72, height: 72, borderRadius: 20, margin: "0 auto 16px",
+                background: `linear-gradient(135deg, ${GREEN}, ${BLUE})`,
+                display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34,
+              }}>🏅</div>
+              <h1 style={{ fontSize: 28, fontWeight: 900, marginBottom: 6, letterSpacing: "-0.01em" }}>
+                Sports Rehab Planner
+              </h1>
+              <p style={{ color: MUTED, fontSize: 14, lineHeight: 1.6, margin: 0 }}>
+                スポーツ傷害リハビリ計画支援ツール
+              </p>
             </div>
 
-            {/* App purpose / concept card */}
             <Card style={{ borderColor: `${BLUE}50`, background: "#f4f9fd" }}>
               <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
                 <span style={{ fontSize: 28, flexShrink: 0, lineHeight: 1 }}>🏃</span>
@@ -524,23 +598,41 @@ export default function RehabApp() {
                     日本ではスポーツ医学の専門家が少なく、「痛みが引いたら復帰していいよ」といった
                     根拠に乏しい復帰指導や、電気治療だけで終わるリハビリが今も多く行われています。
                     本来は動作教育を含む適切なリハビリと、競技特性を理解した段階的な復帰計画が必要です。
-                    <br />
+                    <br /><br />
                     このアプリは、<strong>信頼できるスポーツドクターやアスレティックトレーナーへの
-                    アクセスが難しい選手・保護者の方</strong>に向けて、
+                    アクセスが難しい選手・保護者、学生トレーナーや新人トレーナーの方々</strong>に向けて、
                     スポーツ医学のエビデンスに基づくリハビリ計画の参考情報を提供するために作成しました。
                   </p>
-                  <div style={{
-                    marginTop: 12, padding: "10px 14px", borderRadius: 8,
-                    background: "#fff8e8", border: "1px solid #d4a020",
-                    fontSize: 13, color: "#7a5000", lineHeight: 1.8,
-                  }}>
-                    ⚠️ <strong>大前提：</strong>
-                    身近に信頼できるスポーツドクターがいる場合は、<strong>必ずその意見を最優先</strong>にしてください。
-                    専門家へのアクセスが難しい場合に、このアプリを参考ツールとして活用してください。
-                  </div>
                 </div>
               </div>
             </Card>
+
+            <Card style={{ borderColor: "#d4a020", background: "#fff8e8" }}>
+              <div style={{ fontSize: 13, color: "#7a5000", lineHeight: 1.9 }}>
+                ⚠️ <strong>大前提：</strong>
+                身近に信頼できるスポーツドクターがいる場合は、<strong>必ずその意見を最優先</strong>にしてください。
+                専門家へのアクセスが難しい場合に、このアプリを<strong>自己の責任のもと</strong>参考ツールとして活用してください。
+                <br />
+                アプリ使用による怪我の発生や悪化に対し、作成者は一切の責任を負いません。
+              </div>
+            </Card>
+
+            <button
+              onClick={() => setShowIntro(false)}
+              style={{ ...S.btnPrimary, padding: "16px 32px", fontSize: 16, borderRadius: 14, width: "100%" }}
+            >
+              理解して続ける →
+            </button>
+          </div>
+        )}
+
+        {/* ================= STEP 0 ================= */}
+        {!showIntro && step === 0 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+            <div>
+              <h1 style={{ fontSize: 26, fontWeight: 900, marginBottom: 4 }}>傷害情報を入力</h1>
+              <p style={{ color: MUTED, fontSize: 14 }}>スポーツ・ケガの種類・グレードを選択してリハビリプランを作成します。</p>
+            </div>
 
             {/* Sport Selection */}
             <Card>
@@ -625,7 +717,7 @@ export default function RehabApp() {
             </Card>
 
             {/* Grade */}
-            {injuryId && gradeOptions.length > 0 && (
+            {injuryId && (usesJiss || gradeOptions.length > 0) && (
               <Card>
                 <SectionLabel>{usesJiss ? "JISS分類（型 × 度）" : "重症度グレード"}</SectionLabel>
                 {usesJiss ? (
@@ -706,7 +798,7 @@ export default function RehabApp() {
             <Card>
               <div style={{
                 display: "grid",
-                gridTemplateColumns: currentInjury?.hasSurgery ? "1fr 1fr 1fr" : "1fr 1fr",
+                gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
                 gap: 16,
               }}>
                 <div>
@@ -745,7 +837,10 @@ export default function RehabApp() {
                   </div>
                 )}
                 <div>
-                  <SectionLabel>目標日（大会・試合）</SectionLabel>
+                  <SectionLabel>
+                    目標日（大会・試合）
+                    <span style={{ marginLeft: 6, fontSize: 10, color: MUTED, fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>任意</span>
+                  </SectionLabel>
                   <input type="date" style={{ ...S.input, colorScheme: "light" } as React.CSSProperties}
                     value={targetDate} min={today}
                     onChange={(e) => setTargetDate(e.target.value)} />
@@ -768,7 +863,7 @@ export default function RehabApp() {
         )}
 
         {/* ================= STEP 1 ================= */}
-        {step === 1 && (
+        {!showIntro && step === 1 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             <div>
               <h1 style={{ fontSize: 26, fontWeight: 900, marginBottom: 4 }}>機能評価テスト</h1>
@@ -783,15 +878,19 @@ export default function RehabApp() {
             </div>
 
             {tests.map((test, i) => {
-              const def = injuryId ? TESTS_BY_INJURY[injuryId as InjuryId][i] : null;
+              const def = injuryId ? getTestsByInjury(injuryId as InjuryId, age)[i] : null;
               if (!def) return null;
+              // 順序ゲート（脳震盪のみ）：前の段階に「不可／医師未許可」があれば、この段階は自動的に「不可」（編集不可）
+              const blocked = isSequentialGate && tests.slice(0, i).some((tt) => tt.result === false || tt.result === "doctor_pending");
               return (
                 <Card key={test.id} style={{
                   borderColor: test.result === true ? OK_BORD
                     : test.result === false ? NG_BORD
                     : test.result === "doctor_pending" ? DOC_BORD
+                    : test.result === "discomfort" ? "#e0a850"
                     : BORDER,
                   transition: "border-color 0.2s",
+                  opacity: blocked ? 0.6 : 1,
                 }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -806,28 +905,46 @@ export default function RehabApp() {
                     </div>
                   </div>
                   <p style={{ fontSize: 14, color: MUTED2, marginBottom: 14, lineHeight: 1.6 }}>{def.description}</p>
+                  {blocked && (
+                    <div style={{
+                      marginBottom: 12, padding: "8px 12px", borderRadius: 8,
+                      background: NG_BG, border: `1px solid ${NG_BORD}`,
+                      fontSize: 12, color: NG_TEXT, lineHeight: 1.6,
+                    }}>
+                      🔒 前の段階が未クリア（不可／医師未許可）のため、この段階は自動的に「不可」です。前の段階をクリアすると評価できます。
+                    </div>
+                  )}
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button onClick={() => setTestResult(test.id, true)} style={{
+                    <button disabled={blocked} onClick={() => setTestResult(test.id, true)} style={{
                       flex: 1, padding: 10, borderRadius: 8, fontSize: 14, fontWeight: 600,
                       border: `1.5px solid ${test.result === true ? OK_BORD : BORDER}`,
                       background: test.result === true ? OK_BG : "transparent",
                       color: test.result === true ? GREEN : MUTED2,
-                      cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+                      cursor: blocked ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "all 0.15s",
                     }}>✓ 可</button>
-                    <button onClick={() => setTestResult(test.id, false)} style={{
+                    {def.allowDiscomfort && (
+                      <button disabled={blocked} onClick={() => setTestResult(test.id, "discomfort")} style={{
+                        flex: 1, padding: 10, borderRadius: 8, fontSize: 13, fontWeight: 600,
+                        border: `1.5px solid ${test.result === "discomfort" ? "#e0a850" : BORDER}`,
+                        background: test.result === "discomfort" ? "#fff6e5" : "transparent",
+                        color: test.result === "discomfort" ? "#9a6a00" : MUTED2,
+                        cursor: blocked ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "all 0.15s",
+                      }}>△ 違和感あり</button>
+                    )}
+                    <button disabled={blocked} onClick={() => setTestResult(test.id, false)} style={{
                       flex: 1, padding: 10, borderRadius: 8, fontSize: 14, fontWeight: 600,
                       border: `1.5px solid ${test.result === false ? NG_BORD : BORDER}`,
                       background: test.result === false ? NG_BG : "transparent",
                       color: test.result === false ? NG_TEXT : MUTED2,
-                      cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+                      cursor: blocked ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "all 0.15s",
                     }}>✗ 不可</button>
                     {currentInjury?.showDoctorOption && (
-                      <button onClick={() => setTestResult(test.id, "doctor_pending")} style={{
+                      <button disabled={blocked} onClick={() => setTestResult(test.id, "doctor_pending")} style={{
                         flex: 1, padding: 10, borderRadius: 8, fontSize: 13, fontWeight: 600,
                         border: `1.5px solid ${test.result === "doctor_pending" ? DOC_BORD : BORDER}`,
                         background: test.result === "doctor_pending" ? DOC_BG : "transparent",
                         color: test.result === "doctor_pending" ? DOC_TEXT : MUTED2,
-                        cursor: "pointer", fontFamily: "inherit", transition: "all 0.15s",
+                        cursor: blocked ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "all 0.15s",
                       }}>🏥 医師未許可</button>
                     )}
                   </div>
@@ -846,7 +963,7 @@ export default function RehabApp() {
         )}
 
         {/* ================= STEP 2 ================= */}
-        {step === 2 && plan && (
+        {!showIntro && step === 2 && plan && (
           <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
             {/* Title */}
             <div>
@@ -887,6 +1004,14 @@ export default function RehabApp() {
                 }}>
                   {plan.progressNote}
                 </p>
+                <div style={{
+                  marginTop: 10, padding: "8px 12px", borderRadius: 8,
+                  background: "#fff", border: `1px dashed #80c8a8`,
+                  fontSize: 12, color: "#2a5040", lineHeight: 1.7,
+                }}>
+                  💡 <strong>日数はあくまで「最短ケース」の目安</strong>です。実際は機能評価の各項目をクリアした分だけ進みます。
+                  日数の経過より、<strong>各項目のクリアを優先</strong>してください（目安より遅くても、項目が未クリアなら焦らず段階を守りましょう）。
+                </div>
               </Card>
             )}
 
@@ -906,8 +1031,30 @@ export default function RehabApp() {
             {/* POLICE */}
             {plan.showPolice && <PoliceBlock />}
 
-            {/* Ottawa Ankle Rule */}
-            {plan.showOttawaRule && <OttawaRuleBlock />}
+            {/* Ottawa Ankle Rule — 受傷14日以内のみ表示、折りたたみ式 */}
+            {plan.showOttawaRule && (days === null || days <= 14) && (
+              <div>
+                <button
+                  onClick={() => setShowOttawa((v) => !v)}
+                  style={{
+                    width: "100%", textAlign: "left", display: "flex",
+                    alignItems: "center", justifyContent: "space-between",
+                    padding: "12px 18px", borderRadius: showOttawa ? "12px 12px 0 0" : 12,
+                    background: "#fff8ee", border: "1px solid #f0a04060",
+                    fontSize: 14, fontWeight: 700, color: "#7a3800",
+                    cursor: "pointer", fontFamily: "inherit",
+                  }}
+                >
+                  <span>⚠️ Ottawa Ankle Rule（骨折スクリーニング）</span>
+                  <span style={{ fontSize: 12, color: "#b06000" }}>{showOttawa ? "▲ 閉じる" : "▼ 確認する"}</span>
+                </button>
+                {showOttawa && (
+                  <div style={{ borderRadius: "0 0 12px 12px", overflow: "hidden" }}>
+                    <OttawaRuleBlock />
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* OK / NG */}
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
@@ -948,6 +1095,10 @@ export default function RehabApp() {
                     ⚠️ <strong>全エクササイズ共通：</strong>
                     実施中に患部に<strong>鋭い痛み・元の部位の痛み</strong>が出た場合は直ちに中止してください。
                     軽い筋肉痛・張り感は許容範囲ですが、無理は厳禁です。
+                    <br />
+                    📈 <strong>負荷を上げる目安：</strong>
+                    「徐々に」「段階的に」とある項目は、<strong>1〜2回の練習ごと</strong>に、
+                    翌日に<strong>疼痛・違和感の悪化がなければ</strong>一段階上げます。悪化したら一段階戻してください。
                   </div>
                   <p style={{ fontSize: 11, color: MUTED, marginBottom: 12 }}>
                     💡 詳細ボタンをタップすると解説・注意点を確認できます
@@ -989,6 +1140,7 @@ export default function RehabApp() {
                               marginTop: 8, padding: "12px 14px", borderRadius: 10,
                               background: "#f8fafb", border: `1px solid ${BORDER}`,
                               fontSize: 13, color: TEXT, lineHeight: 1.75,
+                              whiteSpace: "pre-wrap",
                             }}>
                               {item.details}
                             </div>
@@ -1077,6 +1229,41 @@ export default function RehabApp() {
                 <span style={{ fontSize: 14, color: "#7a5000", lineHeight: 1.6 }}>{plan.alert}</span>
               </div>
             )}
+
+            {/* 用語解説（折りたたみ） */}
+            <div>
+              <button
+                onClick={() => setShowGlossary((v) => !v)}
+                style={{
+                  width: "100%", textAlign: "left", display: "flex",
+                  alignItems: "center", justifyContent: "space-between",
+                  padding: "12px 18px", borderRadius: showGlossary ? "12px 12px 0 0" : 12,
+                  background: "#eef4f8", border: `1px solid ${BORDER}`,
+                  fontSize: 14, fontWeight: 700, color: TEXT,
+                  cursor: "pointer", fontFamily: "inherit",
+                }}
+              >
+                <span>📖 用語解説（MMT・ROM・RM・心拍の測り方 など）</span>
+                <span style={{ fontSize: 12, color: MUTED }}>{showGlossary ? "▲ 閉じる" : "▼ ひらく"}</span>
+              </button>
+              {showGlossary && (
+                <div style={{
+                  border: `1px solid ${BORDER}`, borderTop: "none",
+                  borderRadius: "0 0 12px 12px", padding: "8px 18px 16px",
+                  background: CARD,
+                }}>
+                  {GLOSSARY.map((g) => (
+                    <div key={g.term} style={{ padding: "10px 0", borderBottom: `1px solid ${BORDER}` }}>
+                      <div style={{ fontSize: 13, fontWeight: 700, color: BLUE, marginBottom: 3 }}>{g.term}</div>
+                      <div style={{ fontSize: 12.5, color: TEXT, lineHeight: 1.7 }}>{g.desc}</div>
+                    </div>
+                  ))}
+                  <p style={{ fontSize: 11, color: MUTED2, marginTop: 10, lineHeight: 1.6 }}>
+                    ※ 本文中の専門用語はここで解説しています。判定に迷う数値（例：筋力90%）は厳密でなくてよく、左右差が大きくない程度を目安にしてください。
+                  </p>
+                </div>
+              )}
+            </div>
 
             {/* Disclaimer */}
             <div style={{
