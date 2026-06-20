@@ -994,6 +994,32 @@ export default function RehabApp() {
               <PhaseTracker phases={plan.phaseTracker} currentIdx={plan.currentPhaseIndex} />
             )}
 
+            {/* Ankle-GO（足関節捻挫・Phase III＝idx2 以降で開放） */}
+            {injuryId === "ankle_sprain" && (
+              <Card style={{ borderColor: plan.currentPhaseIndex >= 2 ? OK_BORD : BORDER }}>
+                <SectionLabel>🎯 Ankle-GO（復帰準備の客観評価）</SectionLabel>
+                <p style={{ fontSize: 13, color: MUTED2, lineHeight: 1.7, marginBottom: 12 }}>
+                  RTPの最終段階で、復帰準備が整っているかを6項目25点で客観的に確認できます（Picot 2023/2024）。
+                </p>
+                {plan.currentPhaseIndex >= 2 ? (
+                  <a href="/ankle-go" style={{
+                    ...S.btnPrimary, textDecoration: "none", display: "block", textAlign: "center",
+                  }}>
+                    Ankle-GOテストを受ける →
+                  </a>
+                ) : (
+                  <>
+                    <button disabled style={{ ...S.btnPrimary, width: "100%", opacity: 0.35, cursor: "not-allowed" }}>
+                      Ankle-GOテストを受ける
+                    </button>
+                    <p style={{ fontSize: 12, color: MUTED, marginTop: 8, lineHeight: 1.6 }}>
+                      🔒 ホップテストを含むため、<strong>Phase III 以降</strong>（機能回復期／ジョグ段階）で実施可能です。
+                    </p>
+                  </>
+                )}
+              </Card>
+            )}
+
             {/* Progress Note / Reverse Countdown */}
             {plan.progressNote && (
               <Card style={{ borderColor: "#80c8a8", background: "#f0faf5" }}>
