@@ -147,21 +147,22 @@ function SvgSHT() {
 function SvgF8T() {
   // 中心(110,70)で交差する本物の8の字。左コーン(70)・右コーン(150)の周りをループ。
   return (
-    <svg viewBox="0 0 220 140" style={svgBox} role="img" aria-label="フィギュアエイト">
+    <svg viewBox="0 0 220 158" style={svgBox} role="img" aria-label="フィギュアエイト">
       {/* 8の字（中心で交差） */}
       <path
-        d="M110,70 C95,42 45,42 45,70 C45,98 95,98 110,70 C125,42 175,42 175,70 C175,98 125,98 110,70 Z"
+        d="M110,66 C95,40 45,40 45,66 C45,92 95,92 110,66 C125,40 175,40 175,66 C175,92 125,92 110,66 Z"
         fill="none" stroke={GREEN} strokeWidth="3.5"
       />
       {/* コーン2つ（各ループの中心） */}
-      <polygon points="70,60 63,78 77,78" fill={BLUE} />
-      <polygon points="150,60 143,78 157,78" fill={BLUE} />
-      <text x="70" y="92" fontSize="10" fill={BLUE} fontWeight="700" textAnchor="middle">コーン</text>
-      <text x="150" y="92" fontSize="10" fill={BLUE} fontWeight="700" textAnchor="middle">コーン</text>
+      <polygon points="70,56 63,74 77,74" fill={BLUE} />
+      <polygon points="150,56 143,74 157,74" fill={BLUE} />
       {/* コーン間 5m */}
-      <line x1="78" y1="70" x2="142" y2="70" stroke={MUTED2} strokeWidth="1.5" strokeDasharray="4 3" />
-      <text x="110" y="64" fontSize="11" fill={TEXT} fontWeight="700" textAnchor="middle">5m</text>
-      <text x="110" y="128" fontSize="11" fill={GREEN} fontWeight="700" textAnchor="middle">8の字に周回</text>
+      <line x1="78" y1="66" x2="142" y2="66" stroke={MUTED2} strokeWidth="1.5" strokeDasharray="4 3" />
+      <text x="110" y="60" fontSize="11" fill={TEXT} fontWeight="700" textAnchor="middle">5m</text>
+      {/* ラベルはループの外（下）に配置して線と重ならないように */}
+      <text x="70" y="116" fontSize="10" fill={BLUE} fontWeight="700" textAnchor="middle">コーン</text>
+      <text x="150" y="116" fontSize="10" fill={BLUE} fontWeight="700" textAnchor="middle">コーン</text>
+      <text x="110" y="146" fontSize="11" fill={GREEN} fontWeight="700" textAnchor="middle">8の字に周回</text>
     </svg>
   );
 }
