@@ -98,22 +98,31 @@ function SvgSLS() {
 }
 
 function SvgSEBT() {
+  // 中心(110,86)から3方向。矢じりは小さめの実描画ポリゴンで制御し、ラベルは矢じりと重ならない位置に。
+  const cx = 110, cy = 86;
+  const arrow = (x1: number, y1: number, x2: number, y2: number, color: string) => {
+    const ang = Math.atan2(y2 - y1, x2 - x1);
+    const len = 7;
+    const a1 = ang + Math.PI - 0.45, a2 = ang + Math.PI + 0.45;
+    return (
+      <g>
+        <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={color} strokeWidth="3.5" strokeLinecap="round" />
+        <polygon
+          points={`${x2},${y2} ${x2 + len * Math.cos(a1)},${y2 + len * Math.sin(a1)} ${x2 + len * Math.cos(a2)},${y2 + len * Math.sin(a2)}`}
+          fill={color}
+        />
+      </g>
+    );
+  };
   return (
-    <svg viewBox="0 0 220 130" style={svgBox} role="img" aria-label="mSEBT 3方向リーチ">
-      <circle cx="110" cy="78" r="6" fill={TEXT} />
-      {/* ANT 前（上） */}
-      <line x1="110" y1="78" x2="110" y2="22" stroke={GREEN} strokeWidth="4" markerEnd="url(#agArrow)" />
-      {/* PM 後内（左下） */}
-      <line x1="110" y1="78" x2="48" y2="116" stroke={BLUE} strokeWidth="4" markerEnd="url(#abArrow)" />
-      {/* PL 後外（右下） */}
-      <line x1="110" y1="78" x2="172" y2="116" stroke={BLUE} strokeWidth="4" markerEnd="url(#abArrow)" />
-      <defs>
-        <marker id="agArrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill={GREEN} /></marker>
-        <marker id="abArrow" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 Z" fill={BLUE} /></marker>
-      </defs>
-      <text x="116" y="22" fontSize="9" fill={GREEN} fontWeight="700">ANT（前）</text>
-      <text x="14" y="124" fontSize="9" fill={BLUE} fontWeight="700">PM（後内）</text>
-      <text x="150" y="124" fontSize="9" fill={BLUE} fontWeight="700">PL（後外）</text>
+    <svg viewBox="0 0 220 150" style={svgBox} role="img" aria-label="mSEBT 3方向リーチ">
+      {arrow(cx, cy, cx, 40, GREEN)}      {/* ANT 前（上） */}
+      {arrow(cx, cy, 60, 118, BLUE)}      {/* PM 後内（左下） */}
+      {arrow(cx, cy, 160, 118, BLUE)}     {/* PL 後外（右下） */}
+      <circle cx={cx} cy={cy} r="5" fill={TEXT} />
+      <text x={cx} y="32" fontSize="11" fill={GREEN} fontWeight="700" textAnchor="middle">ANT（前）</text>
+      <text x="36" y="134" fontSize="11" fill={BLUE} fontWeight="700" textAnchor="middle">PM（後内）</text>
+      <text x="184" y="134" fontSize="11" fill={BLUE} fontWeight="700" textAnchor="middle">PL（後外）</text>
     </svg>
   );
 }
@@ -136,16 +145,23 @@ function SvgSHT() {
 }
 
 function SvgF8T() {
+  // 中心(110,70)で交差する本物の8の字。左コーン(70)・右コーン(150)の周りをループ。
   return (
-    <svg viewBox="0 0 220 130" style={svgBox} role="img" aria-label="フィギュアエイト">
-      {/* 8の字 */}
-      <path d="M70,65 C70,32 150,32 150,65 C150,98 70,98 70,65 Z" fill="none" stroke={GREEN} strokeWidth="3" />
-      {/* コーン2つ */}
-      <polygon points="70,58 64,74 76,74" fill={BLUE} />
-      <polygon points="150,58 144,74 156,74" fill={BLUE} />
-      <text x="44" y="80" fontSize="9" fill={BLUE} fontWeight="700">コーン</text>
-      <text x="158" y="80" fontSize="9" fill={BLUE} fontWeight="700">コーン</text>
-      <text x="84" y="120" fontSize="9" fill={GREEN} fontWeight="700">8の字に周回</text>
+    <svg viewBox="0 0 220 140" style={svgBox} role="img" aria-label="フィギュアエイト">
+      {/* 8の字（中心で交差） */}
+      <path
+        d="M110,70 C95,42 45,42 45,70 C45,98 95,98 110,70 C125,42 175,42 175,70 C175,98 125,98 110,70 Z"
+        fill="none" stroke={GREEN} strokeWidth="3.5"
+      />
+      {/* コーン2つ（各ループの中心） */}
+      <polygon points="70,60 63,78 77,78" fill={BLUE} />
+      <polygon points="150,60 143,78 157,78" fill={BLUE} />
+      <text x="70" y="92" fontSize="10" fill={BLUE} fontWeight="700" textAnchor="middle">コーン</text>
+      <text x="150" y="92" fontSize="10" fill={BLUE} fontWeight="700" textAnchor="middle">コーン</text>
+      {/* コーン間 5m */}
+      <line x1="78" y1="70" x2="142" y2="70" stroke={MUTED2} strokeWidth="1.5" strokeDasharray="4 3" />
+      <text x="110" y="64" fontSize="11" fill={TEXT} fontWeight="700" textAnchor="middle">5m</text>
+      <text x="110" y="128" fontSize="11" fill={GREEN} fontWeight="700" textAnchor="middle">8の字に周回</text>
     </svg>
   );
 }
@@ -294,7 +310,7 @@ export default function AnkleGoPage() {
 
         {/* mSEBT */}
         <Card>
-          <SectionLabel>mSEBT（最大7点）／ 現在 {sebtScore}点</SectionLabel>
+          <div style={{ ...S.label, textTransform: "none" as const }}>mSEBT（最大7点）／ 現在 {sebtScore}点</div>
           <TestFigure imgSrc="/ankle-go/msebt.png" Svg={SvgSEBT} alt="mSEBT 3方向リーチ" />
           <p style={{ fontSize: 12.5, color: MUTED2, margin: "12px 0", lineHeight: 1.7 }}>
             片脚立位で <strong>ANT（前）・PM（後内）・PL（後外）</strong> の3方向へできるだけ遠くリーチします。
