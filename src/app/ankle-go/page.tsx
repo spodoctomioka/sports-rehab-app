@@ -233,10 +233,13 @@ function FaamItem({ n, text, value, onChange }: { n: number; text: string; value
     </div>
   );
 }
-function RsiItem({ n, text, value, onChange }: { n: number; text: string; value: number | null; onChange: (v: number) => void }) {
+function RsiItem({ n, q, left, right, value, onChange }: { n: number; q: string; left: string; right: string; value: number | null; onChange: (v: number) => void }) {
   return (
     <div style={{ padding: "10px 0", borderBottom: `1px solid ${BORDER}` }}>
-      <div style={{ fontSize: 13, color: TEXT, marginBottom: 6, lineHeight: 1.5 }}>{n}. {text}</div>
+      <div style={{ fontSize: 13, color: TEXT, marginBottom: 6, lineHeight: 1.5 }}>{n}. {q}</div>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: MUTED2, marginBottom: 4 }}>
+        <span>0：{left}</span><span>10：{right}</span>
+      </div>
       <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
         {Array.from({ length: 11 }, (_, i) => i).map((i) => {
           const active = value === i;
@@ -543,8 +546,8 @@ export default function AnkleGoPage() {
               <ModeToggle value={rsiMode} onChange={setRsiMode} left="設問に回答（12項目）" right="％を直接入力" />
               {rsiMode === "a" ? (
                 <>
-                  {ALR_RSI_ITEMS.map((txt, i) => (
-                    <RsiItem key={i} n={i + 1} text={txt} value={rsiAnswers[i]} onChange={(v) => setAns<number | null>(setRsiAnswers, i, v)} />
+                  {ALR_RSI_ITEMS.map((it, i) => (
+                    <RsiItem key={i} n={i + 1} q={it.q} left={it.left} right={it.right} value={rsiAnswers[i]} onChange={(v) => setAns<number | null>(setRsiAnswers, i, v)} />
                   ))}
                   <div style={{
                     marginTop: 12, padding: "9px 12px", borderRadius: 8,
