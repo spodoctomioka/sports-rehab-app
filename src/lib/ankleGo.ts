@@ -156,3 +156,38 @@ export function interpretFull(total: number): AnkleGoInterpretation {
     color: "#cc2244",
   };
 }
+
+// ============================================================
+// v2：質問紙の設問埋め込み（項目文は正式日本語版を後から差し込むプレースホルダ）
+// 著作権保護のため正式項目文は同梱しない。各要素は利用者が差し替える前提のダミー。
+// ============================================================
+
+// FAAM-ADL（21項目）／回答：4 全く難しくない〜0 できない／N/A 該当なし
+export const FAAM_ADL_ITEMS: string[] = Array.from({ length: 21 }, (_, i) => `（項目${i + 1}：正式項目文を挿入）`);
+
+// FAAM-Sport（8項目）／回答：FAAM-ADLと同一
+export const FAAM_SPORT_ITEMS: string[] = Array.from({ length: 8 }, (_, i) => `（項目${i + 1}：正式項目文を挿入）`);
+
+// ALR-RSI（12項目）／回答：0〜10の11段階
+export const ALR_RSI_ITEMS: string[] = Array.from({ length: 12 }, (_, i) => `（項目${i + 1}：正式項目文を挿入）`);
+
+// FAAM 回答型：0〜4 の数値、または "NA"（該当なし）、または null（未回答）
+export type FaamAnswer = 0 | 1 | 2 | 3 | 4 | "NA" | null;
+
+// FAAM ％算出：(N/A以外の回答合計) ÷ (N/A以外の回答数 × 4) × 100
+export function computeFaamPercent(answers: FaamAnswer[]): { pct: number | null; answered: number } {
+  const vals = answers.filter((a): a is 0 | 1 | 2 | 3 | 4 => typeof a === "number");
+  const answered = vals.length;
+  if (answered === 0) return { pct: null, answered: 0 };
+  const sum = vals.reduce((s: number, v) => s + v, 0);
+  return { pct: (sum / (answered * 4)) * 100, answered };
+}
+
+// ALR-RSI ％算出：12項目合計(0〜120) ÷ 1.2（=0〜100）。全項目回答が必須。
+export function computeAlrRsiPercent(answers: (number | null)[]): { pct: number | null; answered: number; allAnswered: boolean } {
+  const answered = answers.filter((a) => a != null).length;
+  const allAnswered = answered === answers.length;
+  if (!allAnswered) return { pct: null, answered, allAnswered: false };
+  const sum = (answers as number[]).reduce((s, v) => s + v, 0);
+  return { pct: sum / 1.2, answered, allAnswered: true };
+}

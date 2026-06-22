@@ -4,7 +4,9 @@ import { useState, useEffect } from "react";
 import {
   scoreAnkleGo, interpretFull, scoreSLS, scoreSEBT, scoreSHT, scoreF8T,
   scoreFaamAdl, scoreFaamSport, scoreAlrRsi,
-  type AnkleGoInput,
+  FAAM_ADL_ITEMS, FAAM_SPORT_ITEMS, ALR_RSI_ITEMS,
+  computeFaamPercent, computeAlrRsiPercent,
+  type AnkleGoInput, type FaamAnswer,
 } from "@/lib/ankleGo";
 
 // ---- Design tokens（Rehabアプリと共通のライトテーマ）----
@@ -190,39 +192,128 @@ function TestFigure({ imgSrc, Svg, alt }: { imgSrc: string; Svg: React.FC; alt: 
 
 const num = (s: string): number | null => (s.trim() === "" ? null : Number(s));
 
+// 2択モード切替（左＝既定）
+function ModeToggle({ value, onChange, left, right }: {
+  value: "a" | "b"; onChange: (v: "a" | "b") => void; left: string; right: string;
+}) {
+  const opt = (key: "a" | "b", label: string) => (
+    <button onClick={() => onChange(key)} style={{
+      flex: 1, padding: "8px 10px", borderRadius: 8, fontSize: 12.5, fontWeight: 600,
+      cursor: "pointer", fontFamily: "inherit",
+      border: `1.5px solid ${value === key ? GREEN : BORDER}`,
+      background: value === key ? OK_BG : "transparent", color: value === key ? GREEN : MUTED2,
+    }}>{label}</button>
+  );
+  return <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>{opt("a", left)}{opt("b", right)}</div>;
+}
+
+const FAAM_OPTS: { v: FaamAnswer; label: string }[] = [
+  { v: 4, label: "4" }, { v: 3, label: "3" }, { v: 2, label: "2" },
+  { v: 1, label: "1" }, { v: 0, label: "0" }, { v: "NA", label: "N/A" },
+];
+function FaamItem({ n, text, value, onChange }: { n: number; text: string; value: FaamAnswer; onChange: (v: FaamAnswer) => void }) {
+  return (
+    <div style={{ padding: "10px 0", borderBottom: `1px solid ${BORDER}` }}>
+      <div style={{ fontSize: 13, color: TEXT, marginBottom: 6, lineHeight: 1.5 }}>{n}. {text}</div>
+      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+        {FAAM_OPTS.map((o) => {
+          const active = value === o.v;
+          const isNA = o.v === "NA";
+          return (
+            <button key={String(o.v)} onClick={() => onChange(active ? null : o.v)} style={{
+              minWidth: 40, padding: "6px 8px", borderRadius: 6, fontSize: 12, fontWeight: active ? 700 : 500,
+              cursor: "pointer", fontFamily: "inherit",
+              border: `1.5px solid ${active ? (isNA ? MUTED2 : GREEN) : BORDER}`,
+              background: active ? (isNA ? "#eef2f5" : OK_BG) : "transparent",
+              color: active ? (isNA ? TEXT : GREEN) : MUTED2,
+            }}>{o.label}</button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+function RsiItem({ n, text, value, onChange }: { n: number; text: string; value: number | null; onChange: (v: number) => void }) {
+  return (
+    <div style={{ padding: "10px 0", borderBottom: `1px solid ${BORDER}` }}>
+      <div style={{ fontSize: 13, color: TEXT, marginBottom: 6, lineHeight: 1.5 }}>{n}. {text}</div>
+      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+        {Array.from({ length: 11 }, (_, i) => i).map((i) => {
+          const active = value === i;
+          return (
+            <button key={i} onClick={() => onChange(i)} style={{
+              width: 30, padding: "6px 0", borderRadius: 6, fontSize: 12, fontWeight: active ? 700 : 500,
+              cursor: "pointer", fontFamily: "inherit",
+              border: `1.5px solid ${active ? BLUE : BORDER}`,
+              background: active ? "#ddf0f8" : "transparent", color: active ? BLUE : MUTED2,
+            }}>{i}</button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function AnkleGoPage() {
   const [skip, setSkip] = useState(false);
 
   // 身体機能
   const [slsErr, setSlsErr]       = useState("");
   const [slsStable, setSlsStable] = useState(false);
-  // mSEBT：下肢長(cm)＋各方向のリーチ距離(cm)から自動で%換算
+  // mSEBT：実測(cm)から計算（a）／％を直接入力（b）
+  const [sebtMode, setSebtMode] = useState<"a" | "b">("a");
   const [legLen, setLegLen] = useState("");
   const [antCm, setAntCm] = useState(""); const [pmCm, setPmCm] = useState(""); const [plCm, setPlCm] = useState("");
+  const [sComp, setSComp] = useState(""); const [sAnt, setSAnt] = useState(""); const [sPm, setSPm] = useState(""); // %直接入力
   const [sebtStable, setSebtStable] = useState(false);
   const [sht, setSht] = useState(""); const [shtStable, setShtStable] = useState(false);
   const [f8t, setF8t] = useState(""); const [f8tStable, setF8tStable] = useState(false);
-  // 質問紙
-  const [adl, setAdl] = useState(""); const [sport, setSport] = useState(""); const [rsi, setRsi] = useState("");
+  // 質問紙：設問に回答（a）／％を直接入力（b）
+  const [adlMode, setAdlMode] = useState<"a" | "b">("a");
+  const [adlAnswers, setAdlAnswers] = useState<FaamAnswer[]>(() => Array(FAAM_ADL_ITEMS.length).fill(null));
+  const [adl, setAdl] = useState("");
+  const [sportMode, setSportMode] = useState<"a" | "b">("a");
+  const [sportAnswers, setSportAnswers] = useState<FaamAnswer[]>(() => Array(FAAM_SPORT_ITEMS.length).fill(null));
+  const [sport, setSport] = useState("");
+  const [rsiMode, setRsiMode] = useState<"a" | "b">("a");
+  const [rsiAnswers, setRsiAnswers] = useState<(number | null)[]>(() => Array(ALR_RSI_ITEMS.length).fill(null));
+  const [rsi, setRsi] = useState("");
+
+  const setAns = <T,>(setter: React.Dispatch<React.SetStateAction<T[]>>, i: number, v: T) =>
+    setter((prev) => prev.map((x, idx) => (idx === i ? v : x)));
 
   // mSEBT 距離(cm)→正規化%（下肢長で除して×100）
   const ll = num(legLen);
   const llOk = ll != null && ll > 0;
   const antV = num(antCm), pmV = num(pmCm), plV = num(plCm);
-  const pct = (cm: number | null): number | null => (llOk && cm != null ? (cm / (ll as number)) * 100 : null);
-  const antPct = pct(antV);
-  const pmPct  = pct(pmV);
-  const plPct  = pct(plV);
-  const compPct = (llOk && antV != null && pmV != null && plV != null)
+  const pct = (cm: number | null): number | null => (llOk && cm != null && cm >= 0 ? (cm / (ll as number)) * 100 : null);
+  const antPctM = pct(antV);
+  const pmPctM  = pct(pmV);
+  const plPctM  = pct(plV);
+  const compPctM = (llOk && antV != null && pmV != null && plV != null && antV >= 0 && pmV >= 0 && plV >= 0)
     ? ((antV + pmV + plV) / (3 * (ll as number))) * 100 : null;
   const fmtPct = (v: number | null) => (v == null ? "—" : `${v.toFixed(1)}%`);
+  // mSEBT 有効%（モードに応じて）
+  const sebtComp = sebtMode === "a" ? compPctM : num(sComp);
+  const sebtAnt  = sebtMode === "a" ? antPctM  : num(sAnt);
+  const sebtPm   = sebtMode === "a" ? pmPctM   : num(sPm);
+
+  // 質問紙の算出と有効判定
+  const adlComp = computeFaamPercent(adlAnswers);
+  const adlItemsValid = adlComp.answered >= 19;
+  const adlPct = adlMode === "a" ? (adlItemsValid ? adlComp.pct : null) : num(adl);
+  const sportComp = computeFaamPercent(sportAnswers);
+  const sportItemsValid = sportComp.answered >= 7;
+  const sportPct = sportMode === "a" ? (sportItemsValid ? sportComp.pct : null) : num(sport);
+  const rsiComp = computeAlrRsiPercent(rsiAnswers);
+  const rsiPct = rsiMode === "a" ? rsiComp.pct : num(rsi);
 
   const input: AnkleGoInput = {
     slsErrors: num(slsErr), slsStable,
-    sebtComp: compPct, sebtAnt: antPct, sebtPm: pmPct, sebtStable,
+    sebtComp, sebtAnt, sebtPm, sebtStable,
     shtTime: num(sht), shtStable,
     f8tTime: num(f8t), f8tStable,
-    faamAdl: num(adl), faamSport: num(sport), alrRsi: num(rsi),
+    faamAdl: adlPct, faamSport: sportPct, alrRsi: rsiPct,
   };
   const b = scoreAnkleGo(input, skip);
   const interp = interpretFull(b.total);
@@ -315,24 +406,34 @@ export default function AnkleGoPage() {
           <TestFigure imgSrc="/ankle-go/msebt.png" Svg={SvgSEBT} alt="mSEBT 3方向リーチ" />
           <p style={{ fontSize: 12.5, color: MUTED2, margin: "12px 0", lineHeight: 1.7 }}>
             片脚立位で <strong>ANT（前）・PM（後内）・PL（後外）</strong> の3方向へできるだけ遠くリーチします。
-            <strong>下肢長</strong>と各方向の<strong>リーチ距離（cm）</strong>を入力すると、自動で%に換算します。
             採点：COMP <strong>&lt;90→0／90〜95→2／&gt;95→4</strong>、ANT&gt;60で+1、PM&gt;90で+1。
           </p>
-          <div style={{ marginBottom: 10 }}>
-            <NumberField label="下肢長（上前腸骨棘ASIS〜内果, cm）" suffix="cm" value={legLen} onChange={setLegLen} placeholder="例：88" />
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 12 }}>
-            <NumberField label="ANT 距離" suffix="cm" value={antCm} onChange={setAntCm} />
-            <NumberField label="PM 距離" suffix="cm" value={pmCm} onChange={setPmCm} />
-            <NumberField label="PL 距離" suffix="cm" value={plCm} onChange={setPlCm} />
-          </div>
-          <div style={{
-            marginTop: 10, padding: "8px 12px", borderRadius: 8, background: "#f7fafc",
-            border: `1px solid ${BORDER}`, fontSize: 12.5, color: TEXT, lineHeight: 1.8,
-          }}>
-            自動換算 → COMP <strong>{fmtPct(compPct)}</strong>／ANT <strong>{fmtPct(antPct)}</strong>／PM <strong>{fmtPct(pmPct)}</strong>／PL {fmtPct(plPct)}
-            {!llOk && <span style={{ color: MUTED2 }}>（下肢長を入力すると換算されます）</span>}
-          </div>
+          <ModeToggle value={sebtMode} onChange={setSebtMode} left="実測値から計算" right="％を直接入力" />
+          {sebtMode === "a" ? (
+            <>
+              <div style={{ marginBottom: 10 }}>
+                <NumberField label="下肢長 LL（上前腸骨棘ASIS〜内果, cm）" suffix="cm" value={legLen} onChange={setLegLen} placeholder="例：88" />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 12 }}>
+                <NumberField label="ANT 距離（ベスト値）" suffix="cm" value={antCm} onChange={setAntCm} />
+                <NumberField label="PM 距離（ベスト値）" suffix="cm" value={pmCm} onChange={setPmCm} />
+                <NumberField label="PL 距離（ベスト値）" suffix="cm" value={plCm} onChange={setPlCm} />
+              </div>
+              <div style={{
+                marginTop: 10, padding: "8px 12px", borderRadius: 8, background: "#f7fafc",
+                border: `1px solid ${BORDER}`, fontSize: 12.5, color: TEXT, lineHeight: 1.8,
+              }}>
+                自動換算 → COMP <strong>{fmtPct(compPctM)}</strong>／ANT <strong>{fmtPct(antPctM)}</strong>／PM <strong>{fmtPct(pmPctM)}</strong>／PL {fmtPct(plPctM)}
+                {!llOk && <span style={{ color: MUTED2 }}>（下肢長を正しく入力すると換算されます）</span>}
+              </div>
+            </>
+          ) : (
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", gap: 12 }}>
+              <NumberField label="COMP %" suffix="%" value={sComp} onChange={setSComp} />
+              <NumberField label="ANT %" suffix="%" value={sAnt} onChange={setSAnt} />
+              <NumberField label="PM %" suffix="%" value={sPm} onChange={setSPm} />
+            </div>
+          )}
           <StableCheck checked={sebtStable} onChange={setSebtStable} />
         </Card>
 
@@ -365,29 +466,99 @@ export default function AnkleGoPage() {
           <>
             <div>
               <h2 style={{ fontSize: 18, fontWeight: 900, margin: "8px 0 4px" }}>② 質問紙（最大7点）</h2>
-              <p style={{ fontSize: 12, color: MUTED }}>v1では各質問紙の合計％を直接入力します（設問の埋め込みはv2予定）。</p>
+              <p style={{ fontSize: 12, color: MUTED }}>
+                各質問紙は「設問に回答」して自動で％を算出できます（「％を直接入力」へ切替も可）。
+                <strong>項目文は正式な日本語版を差し込む前提のプレースホルダ</strong>です。
+              </p>
             </div>
+
+            {/* FAAM-ADL */}
             <Card>
-              <SectionLabel>FAAM-ADL（最大2点）／ 現在 {scoreFaamAdl(num(adl))}点</SectionLabel>
+              <SectionLabel>FAAM-ADL（最大2点）／ 現在 {adlPct == null ? "—" : `${scoreFaamAdl(adlPct)}点`}</SectionLabel>
               <p style={{ fontSize: 12.5, color: MUTED2, marginBottom: 12, lineHeight: 1.7 }}>
-                日常生活の足部・足関節機能（％）。採点：<strong>&lt;90→0／90〜95→1／&gt;95→2</strong>。
+                日常生活の足部・足関節機能。回答：4 全く難しくない／3 少し／2 中等度／1 非常に／0 できない／N/A 該当なし。
+                採点：％ <strong>&lt;90→0／90〜95→1／&gt;95→2</strong>。
               </p>
-              <NumberField label="FAAM-ADL スコア" suffix="%" value={adl} onChange={setAdl} />
+              <ModeToggle value={adlMode} onChange={setAdlMode} left="設問に回答（21項目）" right="％を直接入力" />
+              {adlMode === "a" ? (
+                <>
+                  {FAAM_ADL_ITEMS.map((txt, i) => (
+                    <FaamItem key={i} n={i + 1} text={txt} value={adlAnswers[i]} onChange={(v) => setAns(setAdlAnswers, i, v)} />
+                  ))}
+                  <div style={{
+                    marginTop: 12, padding: "9px 12px", borderRadius: 8,
+                    background: adlItemsValid ? "#f7fafc" : "#fff8e8",
+                    border: `1px solid ${adlItemsValid ? BORDER : "#d4a020"}`,
+                    fontSize: 12.5, color: adlItemsValid ? TEXT : "#7a5000", lineHeight: 1.7,
+                  }}>
+                    回答 {adlComp.answered}/21 ・ 算出％ <strong>{fmtPct(adlPct)}</strong>
+                    {!adlItemsValid && "（有効な算出には19項目以上の回答が必要です。帯判定は保留）"}
+                  </div>
+                </>
+              ) : (
+                <NumberField label="FAAM-ADL スコア" suffix="%" value={adl} onChange={setAdl} />
+              )}
             </Card>
+
+            {/* FAAM-Sport */}
             <Card>
-              <SectionLabel>FAAM-Sport（最大2点）／ 現在 {scoreFaamSport(num(sport))}点</SectionLabel>
+              <SectionLabel>FAAM-Sport（最大2点）／ 現在 {sportPct == null ? "—" : `${scoreFaamSport(sportPct)}点`}</SectionLabel>
               <p style={{ fontSize: 12.5, color: MUTED2, marginBottom: 12, lineHeight: 1.7 }}>
-                スポーツ時の足部・足関節機能（％）。採点：<strong>&lt;80→0／80〜95→1／&gt;95→2</strong>。
+                スポーツ時の足部・足関節機能。回答はFAAM-ADLと同一。採点：％ <strong>&lt;80→0／80〜95→1／&gt;95→2</strong>。
               </p>
-              <NumberField label="FAAM-Sport スコア" suffix="%" value={sport} onChange={setSport} />
+              <ModeToggle value={sportMode} onChange={setSportMode} left="設問に回答（8項目）" right="％を直接入力" />
+              {sportMode === "a" ? (
+                <>
+                  {FAAM_SPORT_ITEMS.map((txt, i) => (
+                    <FaamItem key={i} n={i + 1} text={txt} value={sportAnswers[i]} onChange={(v) => setAns(setSportAnswers, i, v)} />
+                  ))}
+                  <div style={{
+                    marginTop: 12, padding: "9px 12px", borderRadius: 8,
+                    background: sportItemsValid ? "#f7fafc" : "#fff8e8",
+                    border: `1px solid ${sportItemsValid ? BORDER : "#d4a020"}`,
+                    fontSize: 12.5, color: sportItemsValid ? TEXT : "#7a5000", lineHeight: 1.7,
+                  }}>
+                    回答 {sportComp.answered}/8 ・ 算出％ <strong>{fmtPct(sportPct)}</strong>
+                    {!sportItemsValid && "（有効な算出には7項目以上の回答が必要です。帯判定は保留）"}
+                  </div>
+                </>
+              ) : (
+                <NumberField label="FAAM-Sport スコア" suffix="%" value={sport} onChange={setSport} />
+              )}
             </Card>
+
+            {/* ALR-RSI */}
             <Card>
-              <SectionLabel>ALR-RSI（最大3点）／ 現在 {scoreAlrRsi(num(rsi))}点</SectionLabel>
-              <p style={{ fontSize: 12.5, color: MUTED2, marginBottom: 12, lineHeight: 1.7 }}>
-                復帰への心理的準備（Ankle Ligament Reconstruction-Return to Sport after Injury／％）。
-                採点：<strong>&lt;55→0／55〜63→1／63〜76→2／&gt;76→3</strong>。
+              <SectionLabel>ALR-RSI（最大3点）／ 現在 {rsiPct == null ? "—" : `${scoreAlrRsi(rsiPct)}点`}</SectionLabel>
+              <p style={{ fontSize: 12.5, color: MUTED2, marginBottom: 8, lineHeight: 1.7 }}>
+                復帰への心理的準備。各項目 <strong>0〜10</strong> で回答（全12項目）。採点：合計÷1.2＝％。
+                帯：<strong>&lt;55→0／55〜63→1／63〜76→2／&gt;76→3</strong>。
               </p>
-              <NumberField label="ALR-RSI スコア" suffix="%" value={rsi} onChange={setRsi} />
+              <div style={{
+                marginBottom: 12, padding: "8px 12px", borderRadius: 8, background: "#fff8e8",
+                border: "1px solid #d4a020", fontSize: 12, color: "#7a5000", lineHeight: 1.7,
+              }}>
+                ⚠️ ALR-RSIは正式な日本語版が存在しない場合があります。暫定訳を用いる際は解釈に注意してください。
+              </div>
+              <ModeToggle value={rsiMode} onChange={setRsiMode} left="設問に回答（12項目）" right="％を直接入力" />
+              {rsiMode === "a" ? (
+                <>
+                  {ALR_RSI_ITEMS.map((txt, i) => (
+                    <RsiItem key={i} n={i + 1} text={txt} value={rsiAnswers[i]} onChange={(v) => setAns<number | null>(setRsiAnswers, i, v)} />
+                  ))}
+                  <div style={{
+                    marginTop: 12, padding: "9px 12px", borderRadius: 8,
+                    background: rsiComp.allAnswered ? "#f7fafc" : "#fff8e8",
+                    border: `1px solid ${rsiComp.allAnswered ? BORDER : "#d4a020"}`,
+                    fontSize: 12.5, color: rsiComp.allAnswered ? TEXT : "#7a5000", lineHeight: 1.7,
+                  }}>
+                    回答 {rsiComp.answered}/12 ・ 算出％ <strong>{fmtPct(rsiPct)}</strong>
+                    {!rsiComp.allAnswered && "（全12項目の回答が必要です。帯判定は保留）"}
+                  </div>
+                </>
+              ) : (
+                <NumberField label="ALR-RSI スコア" suffix="%" value={rsi} onChange={setRsi} />
+              )}
             </Card>
           </>
         )}
@@ -403,13 +574,17 @@ export default function AnkleGoPage() {
             </span>
           </div>
 
-          {/* 内訳 */}
+          {/* 内訳（質問紙は未算出なら「—」） */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8, margin: "10px 0 14px" }}>
-            {[
+            {([
               ["SLS", b.sls, 3], ["mSEBT", b.sebt, 7], ["サイドホップ", b.sht, 5], ["フィギュア8", b.f8t, 3],
-              ...(!skip ? [["FAAM-ADL", b.faamAdl, 2], ["FAAM-Sport", b.faamSport, 2], ["ALR-RSI", b.alrRsi, 3]] as [string, number, number][] : []),
-            ].map(([name, sc, mx]) => (
-              <div key={name as string} style={{ background: "#f7fafc", border: `1px solid ${BORDER}`, borderRadius: 8, padding: "8px 10px" }}>
+              ...(!skip ? [
+                ["FAAM-ADL", adlPct == null ? "—" : b.faamAdl, 2],
+                ["FAAM-Sport", sportPct == null ? "—" : b.faamSport, 2],
+                ["ALR-RSI", rsiPct == null ? "—" : b.alrRsi, 3],
+              ] as [string, number | string, number][] : []),
+            ] as [string, number | string, number][]).map(([name, sc, mx]) => (
+              <div key={name} style={{ background: "#f7fafc", border: `1px solid ${BORDER}`, borderRadius: 8, padding: "8px 10px" }}>
                 <div style={{ fontSize: 11, color: MUTED2 }}>{name}</div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{sc} <span style={{ fontSize: 11, color: MUTED2 }}>/ {mx}</span></div>
               </div>
@@ -447,6 +622,7 @@ export default function AnkleGoPage() {
           {/* 出典 */}
           <p style={{ fontSize: 10.5, color: MUTED2, marginTop: 12, lineHeight: 1.6 }}>
             出典：Picot B, et al. Sports Health. 2024;16(1):47-57. ／ Picot B, et al. Br J Sports Med. 2024;58:1115-1122.
+            <br />ALR-RSI：Sigonney F, et al. Knee Surg Sports Traumatol Arthrosc. ／ FAAM：Martin RL, et al. Foot Ankle Int. 2005.
           </p>
         </Card>
 
