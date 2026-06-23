@@ -207,14 +207,18 @@ function ModeToggle({ value, onChange, left, right }: {
   return <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>{opt("a", left)}{opt("b", right)}</div>;
 }
 
+// 並びは「左＝最小（できない）→ 右＝最大（全く難しくない）」でALR-RSIと統一。N/Aは末尾。
 const FAAM_OPTS: { v: FaamAnswer; label: string }[] = [
-  { v: 4, label: "4" }, { v: 3, label: "3" }, { v: 2, label: "2" },
-  { v: 1, label: "1" }, { v: 0, label: "0" }, { v: "NA", label: "N/A" },
+  { v: 0, label: "0" }, { v: 1, label: "1" }, { v: 2, label: "2" },
+  { v: 3, label: "3" }, { v: 4, label: "4" }, { v: "NA", label: "N/A" },
 ];
 function FaamItem({ n, text, value, onChange }: { n: number; text: string; value: FaamAnswer; onChange: (v: FaamAnswer) => void }) {
   return (
     <div style={{ padding: "10px 0", borderBottom: `1px solid ${BORDER}` }}>
       <div style={{ fontSize: 13, color: TEXT, marginBottom: 6, lineHeight: 1.5 }}>{n}. {text}</div>
+      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: MUTED2, marginBottom: 4 }}>
+        <span>0：できない</span><span>4：全く難しくない</span>
+      </div>
       <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
         {FAAM_OPTS.map((o) => {
           const active = value === o.v;
@@ -259,6 +263,7 @@ function RsiItem({ n, q, left, right, value, onChange }: { n: number; q: string;
 
 export default function AnkleGoPage() {
   const [skip, setSkip] = useState(false);
+  const [skipAdl, setSkipAdl] = useState(false); // FAAM-ADLのみスキップ（競技者には強度が低いため）
 
   // 身体機能
   const [slsErr, setSlsErr]       = useState("");
@@ -318,7 +323,7 @@ export default function AnkleGoPage() {
     f8tTime: num(f8t), f8tStable,
     faamAdl: adlPct, faamSport: sportPct, alrRsi: rsiPct,
   };
-  const b = scoreAnkleGo(input, skip);
+  const b = scoreAnkleGo(input, skip, skipAdl);
   const interp = interpretFull(b.total);
 
   const slsScore  = scoreSLS(input.slsErrors, slsStable);
@@ -476,30 +481,55 @@ export default function AnkleGoPage() {
             </div>
 
             {/* FAAM-ADL */}
-            <Card>
-              <SectionLabel>FAAM-ADL（最大2点）／ 現在 {adlPct == null ? "—" : `${scoreFaamAdl(adlPct)}点`}</SectionLabel>
-              <p style={{ fontSize: 12.5, color: MUTED2, marginBottom: 12, lineHeight: 1.7 }}>
-                日常生活の足部・足関節機能。回答：4 全く難しくない／3 少し／2 中等度／1 非常に／0 できない／N/A 該当なし。
-                採点：％ <strong>&lt;90→0／90〜95→1／&gt;95→2</strong>。
-              </p>
-              <ModeToggle value={adlMode} onChange={setAdlMode} left="設問に回答（21項目）" right="％を直接入力" />
-              {adlMode === "a" ? (
+            <Card style={{ opacity: skipAdl ? 0.7 : 1 }}>
+              <SectionLabel>FAAM-ADL（最大2点）／ 現在 {skipAdl ? "スキップ" : (adlPct == null ? "—" : `${scoreFaamAdl(adlPct)}点`)}</SectionLabel>
+              <button
+                onClick={() => setSkipAdl((v) => !v)}
+                style={{
+                  display: "flex", alignItems: "center", gap: 10, width: "100%", marginBottom: 12,
+                  padding: "10px 14px", borderRadius: 8, cursor: "pointer", fontFamily: "inherit",
+                  border: `1.5px solid ${skipAdl ? OK_BORD : BORDER}`, background: skipAdl ? OK_BG : "transparent",
+                  color: skipAdl ? GREEN : MUTED2, fontSize: 13.5, fontWeight: 600, textAlign: "left",
+                }}
+              >
+                <span style={{
+                  width: 20, height: 20, borderRadius: 5, flexShrink: 0, fontSize: 13, fontWeight: 900,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  background: skipAdl ? GREEN : "#eef2f5", color: skipAdl ? "#fff" : MUTED2,
+                }}>{skipAdl ? "✓" : ""}</span>
+                FAAM-ADLをスキップ（競技者には天井効果が出やすいため）
+              </button>
+              {!skipAdl && (
                 <>
-                  {FAAM_ADL_ITEMS.map((txt, i) => (
-                    <FaamItem key={i} n={i + 1} text={txt} value={adlAnswers[i]} onChange={(v) => setAns(setAdlAnswers, i, v)} />
-                  ))}
-                  <div style={{
-                    marginTop: 12, padding: "9px 12px", borderRadius: 8,
-                    background: adlItemsValid ? "#f7fafc" : "#fff8e8",
-                    border: `1px solid ${adlItemsValid ? BORDER : "#d4a020"}`,
-                    fontSize: 12.5, color: adlItemsValid ? TEXT : "#7a5000", lineHeight: 1.7,
-                  }}>
-                    回答 {adlComp.answered}/21 ・ 算出％ <strong>{fmtPct(adlPct)}</strong>
-                    {!adlItemsValid && "（有効な算出には19項目以上の回答が必要です。帯判定は保留）"}
-                  </div>
+                  <p style={{ fontSize: 12.5, color: MUTED2, marginBottom: 12, lineHeight: 1.7 }}>
+                    日常生活の足部・足関節機能。回答：0 できない／1 非常に難しい／2 中等度／3 少し難しい／4 全く難しくない／N/A 該当なし（右ほど良好）。
+                    採点：％ <strong>&lt;90→0／90〜95→1／&gt;95→2</strong>。
+                  </p>
+                  <ModeToggle value={adlMode} onChange={setAdlMode} left="設問に回答（21項目）" right="％を直接入力" />
+                  {adlMode === "a" ? (
+                    <>
+                      {FAAM_ADL_ITEMS.map((txt, i) => (
+                        <FaamItem key={i} n={i + 1} text={txt} value={adlAnswers[i]} onChange={(v) => setAns(setAdlAnswers, i, v)} />
+                      ))}
+                      <div style={{
+                        marginTop: 12, padding: "9px 12px", borderRadius: 8,
+                        background: adlItemsValid ? "#f7fafc" : "#fff8e8",
+                        border: `1px solid ${adlItemsValid ? BORDER : "#d4a020"}`,
+                        fontSize: 12.5, color: adlItemsValid ? TEXT : "#7a5000", lineHeight: 1.7,
+                      }}>
+                        回答 {adlComp.answered}/21 ・ 算出％ <strong>{fmtPct(adlPct)}</strong>
+                        {!adlItemsValid && "（有効な算出には19項目以上の回答が必要です。帯判定は保留）"}
+                      </div>
+                    </>
+                  ) : (
+                    <NumberField label="FAAM-ADL スコア" suffix="%" value={adl} onChange={setAdl} />
+                  )}
                 </>
-              ) : (
-                <NumberField label="FAAM-ADL スコア" suffix="%" value={adl} onChange={setAdl} />
+              )}
+              {skipAdl && (
+                <p style={{ fontSize: 12, color: MUTED, lineHeight: 1.7, margin: 0 }}>
+                  FAAM-ADLを除外して採点します（満点は25→23点に変わります）。正式カットオフは6項目25点満点版に基づくため、参考・部分評価としてご確認ください。
+                </p>
               )}
             </Card>
 
@@ -507,7 +537,7 @@ export default function AnkleGoPage() {
             <Card>
               <SectionLabel>FAAM-Sport（最大2点）／ 現在 {sportPct == null ? "—" : `${scoreFaamSport(sportPct)}点`}</SectionLabel>
               <p style={{ fontSize: 12.5, color: MUTED2, marginBottom: 12, lineHeight: 1.7 }}>
-                スポーツ時の足部・足関節機能。回答はFAAM-ADLと同一。採点：％ <strong>&lt;80→0／80〜95→1／&gt;95→2</strong>。
+                スポーツ時の足部・足関節機能。回答：0 できない 〜 4 全く難しくない／N/A（右ほど良好）。採点：％ <strong>&lt;80→0／80〜95→1／&gt;95→2</strong>。
               </p>
               <ModeToggle value={sportMode} onChange={setSportMode} left="設問に回答（8項目）" right="％を直接入力" />
               {sportMode === "a" ? (
@@ -567,22 +597,22 @@ export default function AnkleGoPage() {
         )}
 
         {/* (e) 結果 */}
-        <Card style={{ borderColor: skip ? BORDER : interp.color, borderWidth: 2 }}>
+        <Card style={{ borderColor: b.maxTotal === 25 ? interp.color : BORDER, borderWidth: 2 }}>
           <SectionLabel>📊 結果</SectionLabel>
           <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginBottom: 8 }}>
-            <span style={{ fontSize: 40, fontWeight: 900, color: skip ? TEXT : interp.color, lineHeight: 1 }}>{b.total}</span>
+            <span style={{ fontSize: 40, fontWeight: 900, color: b.maxTotal === 25 ? interp.color : TEXT, lineHeight: 1 }}>{b.total}</span>
             <span style={{ fontSize: 18, color: MUTED, fontWeight: 700 }}>／ {b.maxTotal} 点</span>
             <span style={{ marginLeft: "auto", fontSize: 12, color: MUTED2 }}>
-              身体機能 {b.physical}/18{!skip && ` ・ 質問紙 ${b.questionnaire}/7`}
+              身体機能 {b.physical}/18{!skip && ` ・ 質問紙 ${b.questionnaire}/${b.questionnaireMax}`}
             </span>
           </div>
 
-          {/* 内訳（質問紙は未算出なら「—」） */}
+          {/* 内訳（質問紙は未算出なら「—」／ADLスキップ時は除外） */}
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: 8, margin: "10px 0 14px" }}>
             {([
               ["SLS", b.sls, 3], ["mSEBT", b.sebt, 7], ["サイドホップ", b.sht, 5], ["フィギュア8", b.f8t, 3],
               ...(!skip ? [
-                ["FAAM-ADL", adlPct == null ? "—" : b.faamAdl, 2],
+                ...(skipAdl ? [] : [["FAAM-ADL", adlPct == null ? "—" : b.faamAdl, 2]] as [string, number | string, number][]),
                 ["FAAM-Sport", sportPct == null ? "—" : b.faamSport, 2],
                 ["ALR-RSI", rsiPct == null ? "—" : b.alrRsi, 3],
               ] as [string, number | string, number][] : []),
@@ -594,18 +624,19 @@ export default function AnkleGoPage() {
             ))}
           </div>
 
-          {/* 解釈 */}
-          {!skip ? (
+          {/* 解釈：満点25のときのみ正式カットオフ。部分評価（スキップ）時は参考表示 */}
+          {b.maxTotal === 25 ? (
             <div style={{ padding: "12px 14px", borderRadius: 10, background: `${interp.color}14`, border: `1px solid ${interp.color}55` }}>
               <div style={{ fontSize: 15, fontWeight: 800, color: interp.color, marginBottom: 4 }}>{interp.title}</div>
               <div style={{ fontSize: 13, color: TEXT, lineHeight: 1.8 }}>{interp.desc}</div>
             </div>
           ) : (
             <div style={{ padding: "12px 14px", borderRadius: 10, background: "#fff8e8", border: "1px solid #d4a020" }}>
-              <div style={{ fontSize: 15, fontWeight: 800, color: "#7a5000", marginBottom: 4 }}>身体機能スコア {b.physical} / 18（参考・部分評価）</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: "#7a5000", marginBottom: 4 }}>
+                {skip ? `身体機能スコア ${b.physical} / 18` : `スコア ${b.total} / ${b.maxTotal}`}（参考・部分評価）
+              </div>
               <div style={{ fontSize: 13, color: "#7a5000", lineHeight: 1.8 }}>
-                正式なカットオフ（11点超で復帰準備良好 等）は<strong>全6項目・25点満点版</strong>に基づくため、この部分評価には直接適用できません。
-                確実なRTS判断には<strong>質問紙も実施</strong>してください。
+                正式なカットオフ（12点以上で復帰準備良好 等）は<strong>全6項目・25点満点版</strong>に基づくため、{skip ? "身体機能のみ" : "FAAM-ADLを除いた"}この部分評価には直接適用できません。参考値としてご確認ください。
               </div>
             </div>
           )}

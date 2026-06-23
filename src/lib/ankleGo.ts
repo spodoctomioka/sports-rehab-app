@@ -33,10 +33,12 @@ export interface AnkleGoBreakdown {
   faamSport: number;  // /2
   alrRsi: number;     // /3
   physical: number;       // /18
-  questionnaire: number;  // /7
-  total: number;          // /25（フル）または physical（フィジカルのみ）
-  maxTotal: number;       // 25 または 18
+  questionnaire: number;  // /7（FAAM-ADLスキップ時は/5）
+  questionnaireMax: number; // 7 または 5
+  total: number;          // フル25 ／ ADLスキップ23 ／ フィジカルのみ18
+  maxTotal: number;       // 25 / 23 / 18
   skipQuestionnaire: boolean;
+  skipAdl: boolean;
 }
 
 const has = (n: number | null | undefined): n is number => n != null && !Number.isNaN(n);
@@ -96,7 +98,7 @@ export function scoreAlrRsi(p: number | null): number {
   return 3;
 }
 
-export function scoreAnkleGo(input: AnkleGoInput, skipQuestionnaire: boolean): AnkleGoBreakdown {
+export function scoreAnkleGo(input: AnkleGoInput, skipQuestionnaire: boolean, skipAdl = false): AnkleGoBreakdown {
   const sls  = scoreSLS(input.slsErrors, input.slsStable);
   const sebt = scoreSEBT(input.sebtComp, input.sebtAnt, input.sebtPm, input.sebtStable);
   const sht  = scoreSHT(input.shtTime, input.shtStable);
@@ -106,12 +108,14 @@ export function scoreAnkleGo(input: AnkleGoInput, skipQuestionnaire: boolean): A
   const faamAdl   = scoreFaamAdl(input.faamAdl);
   const faamSport = scoreFaamSport(input.faamSport);
   const alrRsi    = scoreAlrRsi(input.alrRsi);
-  const questionnaire = faamAdl + faamSport + alrRsi; // /7
+  // FAAM-ADLをスキップする場合は質問紙合計から除外（最大は7→5に）
+  const questionnaire = (skipAdl ? 0 : faamAdl) + faamSport + alrRsi;
+  const questionnaireMax = skipAdl ? 5 : 7;
 
   const total    = skipQuestionnaire ? physical : physical + questionnaire;
-  const maxTotal = skipQuestionnaire ? 18 : 25;
+  const maxTotal = skipQuestionnaire ? 18 : (skipAdl ? 23 : 25);
 
-  return { sls, sebt, sht, f8t, faamAdl, faamSport, alrRsi, physical, questionnaire, total, maxTotal, skipQuestionnaire };
+  return { sls, sebt, sht, f8t, faamAdl, faamSport, alrRsi, physical, questionnaire, questionnaireMax, total, maxTotal, skipQuestionnaire, skipAdl };
 }
 
 export type AnkleGoTier = "good" | "more_rehab" | "caution" | "low";
