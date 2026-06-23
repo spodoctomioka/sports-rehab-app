@@ -57,6 +57,16 @@ const GLOSSARY: { term: string; desc: string }[] = [
   { term: "GRTP（段階的競技復帰）", desc: "脳震盪などで使う、段階を踏んで競技に戻すプロトコル。各段階を最低24時間・無症状で過ごせたら次へ進みます。" },
   { term: "Ankle-GO", desc: "足関節捻挫の復帰判定に使う、筋力・バランス・ホップなどを組み合わせた機能テストのまとまり。全項目クリアが復帰の目安です。" },
   { term: "コペンハーゲンアダクション", desc: "内ももを鍛える代表的な運動。グロイン（鼠径部）の傷害予防・再発予防のエビデンスがあります。" },
+  { term: "外旋 / 内旋（ER / IR）", desc: "外旋（ER）＝腕や脚を外へひねる動き。内旋（IR）＝内へひねる動き。肩や股関節の評価でよく使います。" },
+  { term: "ABER肢位", desc: "肩を外転＋外旋した姿勢（腕を上げて外へ開く）。肩関節脱臼で最も外れやすい肢位のため、初期は避けます。" },
+  { term: "GIRD（内旋制限）", desc: "投球側の肩で内旋の可動域が反対側より大きく減った状態。投球肩のケアで重視します。" },
+  { term: "ニーイン（knee-in／動的膝外反）", desc: "着地やカットで膝が内側に入る崩れ。MCLや膝のケガのリスクになるため、入らないよう制御します。" },
+  { term: "プライオメトリクス", desc: "ジャンプ・着地・素早い切り返しなど、バネのような瞬発系トレーニング。復帰後半で競技に近づけます。" },
+  { term: "キネティックチェーン（開放性 / 閉鎖性）", desc: "閉鎖性＝足や手が床・壁に着いた状態の運動（スクワット等）。開放性＝着かない運動（脚を振る等）。両方を組み合わせます。" },
+  { term: "BME（骨髄浮腫）", desc: "MRIで見える骨内のむくみ。骨ストレスのサインですが、無症状の人にも見られ、残っていても必ずしも復帰不可ではありません。" },
+  { term: "Stork / Kemp / Jackson テスト", desc: "片脚立ちで腰を後ろに反らせて腰の痛みを誘発する検査（腰椎分離症の確認・経過観察）。痛みが出なければ陰性。" },
+  { term: "RED-S（相対的エネルギー不足）", desc: "消費に対して食事（エネルギー）が足りない状態。疲労骨折などの背景になり、栄養の見直しが再発予防に重要です。" },
+  { term: "RTS / RTP（競技復帰）", desc: "Return to Sport / Play＝スポーツ・競技への復帰のこと。" },
 ];
 
 const S = {
@@ -439,6 +449,7 @@ export default function RehabApp() {
   const [expandedItems, setExpandedItems] = useState<Set<number>>(new Set());
   const [showOttawa, setShowOttawa] = useState(false);
   const [showGlossary, setShowGlossary] = useState(false);
+  const [showEvidence, setShowEvidence] = useState(false);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -1041,17 +1052,34 @@ export default function RehabApp() {
               </Card>
             )}
 
-            {/* Clinical Guidance / Evidence */}
+            {/* Clinical Guidance / Evidence（折りたたみ：既定で閉じて情報量を抑える） */}
             {plan.clinicalGuidance && (
-              <Card style={{ borderColor: "#b8cfe8", background: "#f4f8fd" }}>
-                <SectionLabel>📚 エビデンス・出典</SectionLabel>
-                <p style={{
-                  fontSize: 13, color: "#2a4060", lineHeight: 1.8,
-                  whiteSpace: "pre-line" as const,
-                }}>
-                  {plan.clinicalGuidance}
-                </p>
-              </Card>
+              <div>
+                <button
+                  onClick={() => setShowEvidence((v) => !v)}
+                  style={{
+                    width: "100%", textAlign: "left", display: "flex",
+                    alignItems: "center", justifyContent: "space-between",
+                    padding: "12px 18px", borderRadius: showEvidence ? "12px 12px 0 0" : 12,
+                    background: "#f4f8fd", border: `1px solid #b8cfe8`,
+                    fontSize: 14, fontWeight: 700, color: "#2a4060",
+                    cursor: "pointer", fontFamily: "inherit",
+                  }}
+                >
+                  <span>📚 エビデンス・出典（詳しい解説）</span>
+                  <span style={{ fontSize: 12, color: MUTED }}>{showEvidence ? "▲ 閉じる" : "▼ ひらく"}</span>
+                </button>
+                {showEvidence && (
+                  <div style={{
+                    border: `1px solid #b8cfe8`, borderTop: "none", borderRadius: "0 0 12px 12px",
+                    background: "#f4f8fd", padding: "4px 18px 16px",
+                  }}>
+                    <p style={{ fontSize: 13, color: "#2a4060", lineHeight: 1.8, whiteSpace: "pre-line" as const }}>
+                      {plan.clinicalGuidance}
+                    </p>
+                  </div>
+                )}
+              </div>
             )}
 
             {/* POLICE */}
