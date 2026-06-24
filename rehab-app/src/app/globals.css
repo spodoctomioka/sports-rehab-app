@@ -1,0 +1,26 @@
+@import "tailwindcss";
+
+@config "../../tailwind.config.ts";
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background-color: #f6f2ec;
+  color: #1a2a3a;
+  font-size: 16px;
+  font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic UI",
+    "Segoe UI", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+select option {
+  background-color: #ffffff;
+  color: #1a2a3a;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: none;
+  opacity: 0.5;
+}
