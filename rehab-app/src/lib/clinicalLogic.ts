@@ -164,6 +164,16 @@ export const STRESS_FRACTURE_PHASES: PhaseTrackerItem[] = [
   { phase: 7, name: "ダッシュ・競技復帰期", desc: "ホップ無痛→段階的フルダッシュ→競技復帰",       duration: "全基準クリアで復帰" },
 ];
 
+// 半月板損傷（保存療法）。機能ベースで進行：腫脹コントロール→ROM→筋力(患健比90%)→荷重筋トレ・ジョグ→方向転換→復帰。
+export const MENISCUS_PHASES: PhaseTrackerItem[] = [
+  { phase: 1, name: "急性・腫脹コントロール期",   desc: "保護・腫脹/関節液の軽減・無痛ROM",       duration: "関節裂隙圧痛・腫脹消失まで" },
+  { phase: 2, name: "可動域回復期",             desc: "完全伸展・屈曲を左右差なく無痛で",       duration: "ROM左右差消失まで" },
+  { phase: 3, name: "筋力回復期",               desc: "大腿四頭筋・ハム 患健比90%へ",           duration: "筋力患健比90%まで" },
+  { phase: 4, name: "荷重筋トレ・ジョグ期",     desc: "スクワット・デッドリフト無痛→ジョグ",   duration: "荷重筋トレ無痛まで" },
+  { phase: 5, name: "方向転換・競技復帰準備期", desc: "ピボット・カッティング・ジャンプ着地",   duration: "競技動作無痛まで" },
+  { phase: 6, name: "競技復帰期",               desc: "全機能基準クリア・段階的復帰",           duration: "全基準クリアで復帰" },
+];
+
 // ---- Grades by Injury ----
 
 export interface GradeOption { value: string; label: string; desc: string }
@@ -179,11 +189,7 @@ export const GRADES_BY_INJURY: Partial<Record<InjuryId, GradeOption[]>> = {
     { value: "II",  label: "Ⅱ度", desc: "30°屈曲位で外反動揺（開大6〜10mm）" },
     { value: "III", label: "Ⅲ度", desc: "0°+30°で外反動揺（開大>10mm・完全断裂）" },
   ],
-  meniscus: [
-    { value: "I",   label: "Grade I",   desc: "変性変化（手術不要）" },
-    { value: "II",  label: "Grade II",  desc: "水平断裂" },
-    { value: "III", label: "Grade III", desc: "完全断裂（手術適応）" },
-  ],
+  // meniscus: グレード不要（断裂型は画像/医師判断であり本アプリ対象外）。機能評価で進行。
   stress_fracture: [
     { value: "I",   label: "Grade I",   desc: "骨膜反応のみ" },
     { value: "II",  label: "Grade II",  desc: "骨膜＋骨内変化" },
@@ -245,7 +251,7 @@ export const INJURY_TYPES: InjuryDef[] = [
   { id: "quadriceps",           label: "大腿四頭筋肉離れ",           area: "下肢", usesJiss: true,  icon: "🦵" },
   { id: "ankle_sprain",         label: "足関節捻挫",                 area: "下肢", usesJiss: false, icon: "🦶" },
   { id: "mcl",                  label: "内側側副靱帯損傷（MCL）",    area: "下肢", usesJiss: false, icon: "🦵", showDoctorOption: true },
-  { id: "meniscus",             label: "半月板損傷",                 area: "下肢", usesJiss: false, icon: "🦴", hasSurgery: true },
+  { id: "meniscus",             label: "半月板損傷",                 area: "下肢", usesJiss: false, icon: "🦴" },
   { id: "stress_fracture",      label: "下肢疲労骨折",               area: "下肢", usesJiss: false, icon: "🦴", showDoctorOption: true },
   { id: "spondylolysis",        label: "腰椎分離症",                 area: "体幹", usesJiss: false, icon: "🦴", showDoctorOption: true },
   { id: "rotator_cuff",         label: "腱板損傷",                   area: "上肢", usesJiss: false, icon: "💪", hasSurgery: true },
@@ -290,11 +296,11 @@ export const TESTS_BY_INJURY: Record<InjuryId, TestItem[]> = {
     { id: "okHopAgility", title: "4種ホップLSI≧90%＋競技課題", description: "片脚ホップ4種（シングル・トリプル・クロスオーバー・6mタイム）の左右対称性指数（LSI）が全て90%以上で、かつ無痛・外反制御下で競技特異的なカッティング/ピボット課題が行えるか（着地・カットで膝が内側に入らない＝ニーインを制御）。※ACL基準からの外挿。", icon: "↩" },
   ],
   meniscus: [
-    { id: "okROM",        title: "完全可動域",     description: "完全屈曲・伸展が疼痛なく可能か",             icon: "↕" },
-    { id: "okJointLine",  title: "関節裂隙圧痛なし", description: "膝関節の内外側裂隙に圧痛がないか",         icon: "👆" },
-    { id: "okSquat",      title: "フルスクワット",  description: "疼痛なくフルスクワットが可能か",             icon: "⬇" },
-    { id: "okJog",        title: "ジョグ",         description: "疼痛なく5分間のジョグが可能か",             icon: "🏃" },
-    { id: "okPivot",      title: "ピボット動作",   description: "疼痛なくピボット動作が可能か",               icon: "⟳" },
+    { id: "okJointLine", title: "関節裂隙の圧痛・腫脹なし",                  description: "膝の内/外側の関節裂隙に圧痛がなく、関節の腫れ（関節液）が引いているか。関節裂隙圧痛は半月板障害の参考所見（感度・特異度とも約83%）。腫脹・圧痛の残存は炎症・負荷過多のサインのため、無理に次へ進めません。", icon: "👆" },
+    { id: "okROM",       title: "可動域 左右差なし（無痛）",                description: "完全伸展・完全屈曲が健側と同等（左右差なし）で、最終域でも疼痛・引っかかりがないか。",                                                                 icon: "↕" },
+    { id: "okStrength",  title: "筋力 患健比90%以上",                       description: "大腿四頭筋・ハムストリングの筋力（MMT、可能なら等速性）が健側比90%以上（左右差10%未満）か。",                                                           icon: "💪" },
+    { id: "okSquat",     title: "荷重筋トレ無痛（スクワット・デッドリフト）", description: "フルスクワット・デッドリフトなど荷重をかけた筋力トレーニングを疼痛なく行えるか。クリアできればジョグ・ランニングへ進みます。",                          icon: "🏋" },
+    { id: "okPivot",     title: "ピボット・カッティング無痛",               description: "方向転換（ピボット）・カッティング・ジャンプ着地など競技特異的動作を疼痛・不安感なく行えるか（競技復帰の目安）。",                                       icon: "⟳" },
   ],
   stress_fracture: [
     { id: "okPointTender", title: "圧痛消失",            description: "骨折部位を押した時の直接圧痛が消失しているか。疼痛に応じて松葉杖を使用し、運動は日常生活レベルに制限します（違和感程度なら自立歩行可）。", icon: "👆", allowDiscomfort: true },
@@ -1733,6 +1739,150 @@ function stressFracturePlan(p: GeneratePlanParams): RehabPlan {
   };
 }
 
+// --- Meniscus（半月板損傷・保存療法） ---
+// 機能ベース・グレードなし。先生の臨床基準（ROM左右差なし・筋力患健比90%・荷重筋トレ無痛で進行）に準拠。
+// 出典：Kise 2016 BMJ／Duong 2023 JAMA／Beaufils&Pujol 2017 OTSR／Monson 2025 Curr Rev Musculoskelet Med。
+function meniscusPlan(p: GeneratePlanParams): RehabPlan {
+  const td = getTargetDays(p.targetDate);
+
+  const okJointLine = t(p.tests, "okJointLine");
+  const okROM       = t(p.tests, "okROM");
+  const okStrength  = t(p.tests, "okStrength");
+  const okSquat     = t(p.tests, "okSquat");
+  const okPivot     = t(p.tests, "okPivot");
+
+  let idx = 0;
+  if      (!okJointLine) idx = 0; // 急性・腫脹コントロール期
+  else if (!okROM)       idx = 1; // 可動域回復期
+  else if (!okStrength)  idx = 2; // 筋力回復期（患健比90%）
+  else if (!okSquat)     idx = 3; // 荷重筋トレ・ジョグ期
+  else if (!okPivot)     idx = 4; // 方向転換・競技復帰準備期
+  else                   idx = 5; // 競技復帰可
+  const fullyReturned = okPivot;
+
+  type D = { summary: string; okList: string[]; ngList: string[]; rehabMenu: RehabMenuItem[]; timeline: TimelineRow[]; alert: string };
+  const data: D[] = [
+    {
+      summary: "半月板損傷（保存療法）の急性・腫脹コントロール期です。膝の腫れ（関節液）と関節裂隙の圧痛を引かせ、痛みのない範囲で可動域を保ちます。半月板はできる限り温存（保存）を優先します。",
+      okList: ["保護＋痛みの出ない範囲での荷重", "腫脹管理（アイシング・圧迫・挙上）", "疼痛のない範囲の可動域運動（ヒールスライド等）", "大腿四頭筋セッティング（等尺性）・非荷重の有酸素"],
+      ngList: ["深いしゃがみ込み・正座（深屈曲）", "捻り＋荷重（ピボット）", "ジャンプ・ランニング", "ロッキング（引っかかって伸びない）を我慢した運動"],
+      rehabMenu: [
+        { title: "腫脹コントロール", sets: "アイシング15分 × 4〜6回", note: "圧迫・挙上と併用。関節液・炎症を引かせる", details: "アイシング（氷嚢を直接15分）・弾性包帯による圧迫・下肢挙上で関節の腫れ（関節液）を軽減します。腫脹・関節裂隙の圧痛は炎症や負荷過多のサインで、残る間は無理に負荷を上げません。" },
+        { title: "大腿四頭筋セッティング", sets: "10秒 × 10回 × 3", note: "膝を伸ばしたまま力を入れる等尺性", details: "膝を伸ばした状態で太もも前面に力を入れて10秒保持します。関節を動かさずに筋の廃用を防ぎます。痛みの出ない強さで行います。" },
+        { title: "無痛範囲の可動域運動", sets: "各10回 × 3", note: "ヒールスライド等。痛み・引っかかりの手前まで", details: "踵を滑らせて膝をゆっくり曲げ伸ばしします（ヒールスライド）。痛み・引っかかりの出ない範囲で、完全伸展・屈曲の回復を目指します。反動はつけません。" },
+      ],
+      timeline: [
+        { week: "現在：急性・腫脹コントロール期", goal: "圧痛・腫脹消失", activity: "保護・腫脹管理・無痛ROM" },
+        { week: "→ 圧痛・腫脹消失で",            goal: "可動域回復",     activity: "完全伸展・屈曲（左右差なし）" },
+        { week: "→ ROM回復で",                  goal: "筋力回復",       activity: "患健比90%へ" },
+      ],
+      alert: "ロッキング（膝が引っかかって完全に伸びない）が続く場合は、変位した断片による外傷性断裂（バケツ柄断裂など）の可能性があり手術適応のことがあります。保存で進まない・ロッキングが続く時は専門医評価を受けてください。",
+    },
+    {
+      summary: "腫脹・圧痛が引きました。可動域回復期です。完全伸展・完全屈曲を健側と同等（左右差なし）に、痛みなく取り戻します。",
+      okList: ["完全伸展・屈曲を目標にした可動域運動", "大腿四頭筋・ハムの等尺性〜軽い等張性", "自転車（低負荷）・水中運動", "腫脹が出ない範囲での荷重"],
+      ngList: ["深屈曲での荷重・捻り", "ランニング・ジャンプ", "最終域での反動・無理な伸ばし", "痛み・腫脹が出る負荷"],
+      rehabMenu: [
+        { title: "可動域運動（完全伸展・屈曲）", sets: "各10〜15回 × 3", note: "ヒールスライド・伸展ストレッチ。左右差をなくす", details: "完全伸展（膝裏が伸びきる）と完全屈曲を、健側と同等になるまで段階的に広げます。痛み・引っかかりの手前で止め、反動はつけません。" },
+        { title: "軽い筋力強化", sets: "10〜15回 × 3", note: "SLR・等尺性〜軽い等張性", details: "脚上げ（SLR）や軽負荷で大腿四頭筋・ハム・殿筋を刺激します。腫脹・痛みが出ない範囲で行い、翌日に悪化がなければ漸増します。" },
+        { title: "低負荷の有酸素", sets: "15〜20分", note: "自転車（低負荷）・水中運動", details: "膝に負担の少ない自転車（サドル高め・低負荷）や水中運動で全身持久力を維持します。" },
+      ],
+      timeline: [
+        { week: "現在：可動域回復期", goal: "ROM左右差なし（無痛）", activity: "完全伸展・屈曲の回復" },
+        { week: "→ ROM回復で",       goal: "筋力回復",             activity: "患健比90%へ" },
+        { week: "→ 筋力90%で",       goal: "荷重筋トレ・ジョグ",   activity: "スクワット・デッドリフト無痛→ジョグ" },
+      ],
+      alert: "可動域の左右差・最終域の痛みが残る間は筋力強化へ進めません。腫れが再び出たら一段階戻します。",
+    },
+    {
+      summary: "可動域が回復しました。筋力回復期です。大腿四頭筋・ハムストリングの筋力を患健比90%以上（左右差10%未満）まで戻します。",
+      okList: ["大腿四頭筋・ハム・殿筋の筋力強化（漸増）", "両脚→片脚への荷重トレーニングの準備", "バランス・固有感覚訓練", "自転車・水中での持久力維持"],
+      ngList: ["深屈曲＋高負荷", "捻り動作（ピボット）", "ランニング・ジャンプ（筋力90%・荷重筋トレ無痛まで）", "痛み・腫脹を伴う負荷"],
+      rehabMenu: [
+        { title: "下肢筋力強化", sets: "12〜15回 × 3", note: "レッグプレス・レッグカール（軽→中負荷・フォーム重視）", details: "レッグプレス・レッグカール・ハムストリングカールなどで大腿四頭筋・ハムを強化します。フォームが崩れず翌日に悪化がなければ段階的に負荷を上げ、患健比90%（左右差10%未満）を目指します。深屈曲＋高負荷は避けます。" },
+        { title: "片脚への移行・殿筋", sets: "各10〜12回 × 3", note: "片脚ブリッジ・ステップアップ", details: "両脚種目が安定したら片脚ブリッジ・ステップアップへ移行し、片脚での荷重に耐えられる筋力をつくります。殿筋を含め下肢全体を強化します。" },
+        { title: "バランス・固有感覚", sets: "30秒 × 3", note: "片脚立ち→不安定面", details: "片脚立位から不安定面（バランスパッド等）へ難易度を上げ、固有感覚を回復します。膝が内に入らない制御を意識します。" },
+      ],
+      timeline: [
+        { week: "現在：筋力回復期", goal: "筋力 患健比90%", activity: "下肢筋力強化（漸増）" },
+        { week: "→ 筋力90%で",     goal: "荷重筋トレ・ジョグ", activity: "スクワット・デッドリフト無痛→ジョグ" },
+        { week: "→ 荷重筋トレ無痛で", goal: "方向転換準備", activity: "ピボット・カッティング" },
+      ],
+      alert: "筋力 患健比90%が次（荷重筋トレ）の目安。痛み・腫脹なく左右差が縮まってから進みます。",
+    },
+    {
+      summary: "筋力が患健比90%に達しました。荷重筋トレ・ジョグ期です。フルスクワット・デッドリフトなど荷重をかけた筋トレを無痛で行い、問題なければジョグ→ランニングへ進みます。",
+      okList: ["フルスクワット・デッドリフト（フォーム重視・漸増）", "荷重筋トレが無痛ならジョグ→段階的ランニング", "両脚→片脚の荷重種目", "ジャンプ準備（両脚の軽いホップから）"],
+      ngList: ["痛みを伴うスクワット・デッドリフト", "急なカッティング・ピボット（次段階）", "全力スプリント（ランニングが安定するまで）", "翌日に腫脹・痛みが出る負荷"],
+      rehabMenu: [
+        { title: "荷重筋トレ（スクワット・デッドリフト）", sets: "8〜12回 × 3", note: "フォーム重視で無痛のまま漸増", details: "フルスクワット・デッドリフトなど荷重をかけた種目を、フォームを崩さず疼痛なく行えるようにします。痛み・翌日の腫脹が出ない範囲で段階的に負荷を上げます。これが無痛で行えることがランニング再開の目安です。" },
+        { title: "ジョグ→ランニング漸増", sets: "段階的", note: "荷重筋トレ無痛を確認してから開始", details: "短時間のジョグから始め、疼痛・腫脹がなく翌日に悪化がなければ距離・速度を段階的に上げます。痛みが出たら一段階戻します。" },
+        { title: "ジャンプ準備", sets: "各10回 × 3", note: "両脚の軽いホップ→着地制御", details: "両脚での軽いホップ・着地から始め、膝が内に入らない着地制御を確認します。次段階の方向転換に備えます。" },
+      ],
+      timeline: [
+        { week: "現在：荷重筋トレ・ジョグ期", goal: "荷重筋トレ無痛→ジョグ", activity: "スクワット・デッドリフト・ランニング漸増" },
+        { week: "→ ランニング無痛で",        goal: "方向転換準備",       activity: "ピボット・カッティング・ジャンプ" },
+        { week: "→ 競技動作無痛で",          goal: "競技復帰",           activity: "段階的フル参加" },
+      ],
+      alert: "荷重筋トレ（スクワット・デッドリフト）が無痛で行えることがランニング再開の目安。痛み・翌日の腫脹が出たら一段階戻します。",
+    },
+    {
+      summary: "荷重筋トレ・ランニングが無痛になりました。方向転換・競技復帰準備期です。ピボット・カッティング・ジャンプ着地など競技特異的動作を、疼痛・不安感なく段階的に行います。",
+      okList: ["方向転換（ピボット）・カッティングの段階的導入", "ジャンプ・着地ドリル（膝の制御）", "競技特異的アジリティ（低速→高速）", "片脚ホップの左右対称性の確認"],
+      ngList: ["痛み・引っかかり・腫脹が出る方向転換", "不安感が残る状態での全力プレー", "医師の許可前の試合復帰", "翌日に症状が出る負荷"],
+      rehabMenu: [
+        { title: "アジリティ（方向転換・カッティング）", sets: "10〜15分", note: "ラダー・コーン。低速→高速へ", details: "ラダー・コーンドリルで方向転換・カッティングを低速から導入し、痛み・引っかかり・腫脹が出ないことを確認しながら高速・鋭角へ段階的に進めます。" },
+        { title: "ジャンプ・着地制御", sets: "各8〜10回 × 3", note: "両脚→片脚。膝が内に入らない着地", details: "両脚から片脚へジャンプ・着地ドリルを進めます。着地で膝がつま先より内側に入らない（ニーインしない）制御を鏡・動画で確認します。" },
+        { title: "片脚ホップ（左右差確認）", sets: "左右で比較", note: "シングル・トリプルホップ等", details: "片脚ホップ（距離・連続）で患側/健側の左右差を確認します。左右差が小さく無痛・不安感なしが復帰の目安です。" },
+      ],
+      timeline: [
+        { week: "現在：方向転換・競技復帰準備期", goal: "ピボット・カッティング無痛", activity: "アジリティ・ジャンプ・ホップ" },
+        { week: "→ 競技動作無痛で",              goal: "競技復帰",               activity: "段階的フル参加→試合" },
+      ],
+      alert: "ピボット・カッティングで痛み・引っかかり・腫脹が出る間は復帰しません。半月板を温存するため無理な深屈曲＋捻りは避けます。",
+    },
+    {
+      summary: "ピボット・カッティングが無痛で可能になりました。機能基準（ROM左右差なし・筋力患健比90%・荷重筋トレ無痛・方向転換無痛）をクリアしています。段階的に競技へ完全復帰します。",
+      okList: ["競技特異的練習への段階的フル参加", "筋力・パワー・アジリティの維持・発展", "再発予防（下肢筋力・着地/カット制御の継続）", "違和感・腫脹が出たら負荷を調整"],
+      ngList: ["痛み・腫脹を我慢しての継続", "深屈曲＋強い捻りの反復（半月板への過負荷）", "急激な練習量の増加"],
+      rehabMenu: [
+        { title: "競技特異的フル練習（段階的）", sets: "練習準拠", note: "部分参加→フル参加へ", details: "ポジション固有の動作・練習に段階的にフル参加します。各段階で痛み・腫脹・引っかかりが出ないことを確認します。" },
+        { title: "筋力・パワー維持", sets: "8〜10回 × 3〜4", note: "下肢筋力 患健比を維持・発展", details: "回復した筋力・パワーを維持・発展させます。再発予防には下肢筋力と動作の質が重要です。" },
+        { title: "再発予防（着地・カット制御）", sets: "継続", note: "ニーイン制御・負荷管理", details: "着地・カットで膝が内に入らない制御を継続し、練習量の急増を避けます。半月板温存のため深屈曲＋捻りの過負荷を避けます。" },
+      ],
+      timeline: [
+        { week: "現在：競技復帰期",   goal: "競技完全復帰", activity: "段階的フル参加→試合" },
+        { week: "復帰後シーズン中", goal: "再発予防継続",   activity: "下肢筋力維持・動作の質・負荷管理" },
+      ],
+      alert: "復帰後も腫脹・関節裂隙の痛みが出たら負荷を見直してください。半月板温存のため深屈曲＋捻りの過負荷を避け、下肢筋力と動作の質を維持します。",
+    },
+  ];
+
+  const phaseLabel = fullyReturned && idx === 5 ? "競技復帰可（機能基準クリア）" : MENISCUS_PHASES[idx].name;
+
+  return {
+    phase: `Phase ${idx + 1}：${phaseLabel}`,
+    currentPhaseIndex: idx,
+    totalPhases: 6,
+    summary: data[idx].summary,
+    okList: data[idx].okList,
+    ngList: data[idx].ngList,
+    rehabMenu: data[idx].rehabMenu,
+    timeline: td ? [...data[idx].timeline, { week: "目標日", goal: "大会・試合", activity: `${td}日後` }] : data[idx].timeline,
+    alert: data[idx].alert,
+    phaseTracker: MENISCUS_PHASES,
+    clinicalGuidance:
+      "■ 半月板損傷（保存療法）※本プランは非手術（保存）を対象\n" +
+      "・変性断裂：運動療法が第一選択。中年の変性内側半月板断裂では、12週の運動療法が関節鏡下半月板部分切除術（APM）と2年時点で同等の機能改善（Kise NJ, et al. BMJ 2016;354:i3740. doi:10.1136/bmj.i3740）。機械症状（引っかかり・ロッキング）があっても変性断裂では手術は基本的に非適応で、運動療法が第一選択（Duong V, et al. JAMA 2023;330(16):1568-1580. doi:10.1001/jama.2023.19675）。\n" +
+      "・『Save the meniscus』：半月板切除は将来の変形性膝関節症リスクを高めるため、可能な限り温存（保存・修復）を優先する（Beaufils P, Pujol N. Orthop Traumatol Surg Res 2017;103(8S):S237-S244. doi:10.1016/j.otsr.2017.08.003）。\n" +
+      "・外傷性の変位断裂（バケツ柄断裂など、ロッキングを伴う）は手術適応となることがあるため、保存で進まない・ロッキングが続く場合は専門医評価を（Duong 2023）。\n" +
+      "■ 診察所見\n" +
+      "・関節裂隙圧痛（感度・特異度とも約83%）・McMurrayテスト（感度61%・特異度84%）が参考所見。腫脹（関節液）・関節裂隙圧痛の残存は炎症/負荷過多のサイン（Duong 2023／修復後でも遅延・癒合不良のサインとされる：Monson JK, et al. Curr Rev Musculoskelet Med 2025;18(9):331-343. doi:10.1007/s12178-025-09967-6）。\n" +
+      "■ 進め方（機能ベース・臨床基準）\n" +
+      "・腫脹/圧痛の消退 → ROM左右差なし（無痛）→ 筋力 患健比90%以上 → 荷重筋トレ（スクワット・デッドリフト）無痛 → ジョグ → ピボット・カッティング無痛で競技復帰。暦ではなく機能基準で段階を進める。",
+  };
+}
+
 // --- Ankle Sprain ---
 
 function anklePlan(p: GeneratePlanParams): RehabPlan {
@@ -2434,13 +2584,14 @@ function concussionPlan(p: GeneratePlanParams): RehabPlan {
     phaseTracker: GRTP_PHASES,
     clinicalGuidance:
       "段階的競技復帰プロトコル（GRTP）\n" +
-      "Phase 1（24hrs）：完全安静。無症状であること。医師管理外は最低14日間。\n" +
+      "Phase 1（24〜48時間）：相対的安静（無理のない範囲で安静。過度な完全安静は避ける）。無症状であること。医師管理外は最低14日間。\n" +
       "Phase 2（48hrs）：軽度有酸素運動（ウォーキング・水泳・固定自転車エルゴ、最大予測心拍数70%未満）。レジスタンス禁止。\n" +
       "Phase 3（72hrs）：スポーツ固有の運動（ランニング・ドリル）。頭部衝撃禁止。\n" +
       "Phase 4（96hrs）：非コンタクト練習ドリル（例：パス・ドリル）。漸進的レジスタンス開始可。\n" +
       "Phase 5（96hrs+）：フル・コンタクト練習（医師許可後）。\n" +
       "Phase 6（120hrs）：競技復帰。リハビリ完了。\n" +
-      "※ 各フェーズは最低24時間実施し無症状を確認してから次フェーズへ。症状出現で即フェーズ後退。",
+      "※ 各フェーズは最低24時間実施し無症状を確認してから次フェーズへ。症状出現で即フェーズ後退。\n" +
+      "出典：Patricios JS, et al. Consensus statement on concussion in sport: the 6th International Conference on Concussion in Sport — Amsterdam, October 2022. Br J Sports Med 2023;57(11):695-711. doi:10.1136/bjsports-2023-106898（CISG・段階的競技復帰GRTS）",
   };
 }
 
@@ -3299,6 +3450,8 @@ export function generatePlan(p: GeneratePlanParams): RehabPlan {
       result = muscleStrainPlan(p); break;
     case "ankle_sprain":
       result = anklePlan(p); break;
+    case "meniscus":
+      result = meniscusPlan(p); break;
     case "mcl":
       result = mclPlan(p); break;
     case "concussion":
