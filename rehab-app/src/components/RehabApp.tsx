@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, Fragment } from "react";
 import {
   SPORTS_DATA, INJURY_TYPES, GRADES_BY_INJURY,
   JISS_TYPES, JISS_DEGREES, MUSCLE_STRAIN_PHASES, GRTP_PHASES,
@@ -391,8 +391,8 @@ function JissGrid({ value, onChange }: { value: JissGrade | null; onChange: (g: 
           </div>
         ))}
         {types.map((tp) => (
-          <>
-            <div key={`label-${tp}`} style={{ display: "flex", flexDirection: "column", justifyContent: "center", paddingRight: 8 }}>
+          <Fragment key={tp}>
+            <div style={{ display: "flex", flexDirection: "column", justifyContent: "center", paddingRight: 8 }}>
               <span style={{ fontSize: 13, fontWeight: 700, color: TEXT }}>{JISS_TYPES[tp].label}</span>
               <span style={{ fontSize: 11, color: MUTED }}>{JISS_TYPES[tp].desc}</span>
             </div>
@@ -419,7 +419,7 @@ function JissGrid({ value, onChange }: { value: JissGrade | null; onChange: (g: 
                 </button>
               );
             })}
-          </>
+          </Fragment>
         ))}
       </div>
       {value && (
@@ -483,6 +483,12 @@ export default function RehabApp() {
       setTests(getTestsByInjury(injuryId as InjuryId, age).map((t) => ({ id: t.id, result: null })));
     }
   }, [age]);
+
+  // テスト定義は injuryId / age が変わったときだけ算出（レンダー毎の再計算を回避）
+  const testDefs = useMemo(
+    () => (injuryId ? getTestsByInjury(injuryId as InjuryId, age) : []),
+    [injuryId, age]
+  );
 
   const isHeatStrokeIII = injuryId === "heat_stroke" && grade === "III";
   const step1Valid = !!sport && !!age && !!injuryId && !!injuryDate &&
@@ -890,7 +896,7 @@ export default function RehabApp() {
             </div>
 
             {tests.map((test, i) => {
-              const def = injuryId ? getTestsByInjury(injuryId as InjuryId, age)[i] : null;
+              const def = testDefs[i] ?? null;
               if (!def) return null;
               // 順序ゲート（脳震盪のみ）：前の段階に「不可／医師未許可」があれば、この段階は自動的に「不可」（編集不可）
               const blocked = isSequentialGate && tests.slice(0, i).some((tt) => tt.result === false || tt.result === "doctor_pending");
@@ -1112,7 +1118,7 @@ export default function RehabApp() {
             )}
 
             {/* OK / NG */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 16 }}>
               <Card style={{ borderColor: OK_BORD }}>
                 <SectionLabel>✓ 今やってよいこと</SectionLabel>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
