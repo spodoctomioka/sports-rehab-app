@@ -134,7 +134,7 @@ export function interpretFull(total: number): AnkleGoInterpretation {
       tier: "good",
       title: "復帰準備 良好の目安（12点以上）",
       desc: "2か月時点でこのスコアの選手は、1年後に「良好回復（再受傷なく機能が安定した状態）」に至る確率が約12倍と報告されています。最終判断は医療者と。",
-      color: "#00875f",
+      color: "#2f5277",
     };
   }
   if (total >= 8) {
@@ -142,7 +142,7 @@ export function interpretFull(total: number): AnkleGoInterpretation {
       tier: "more_rehab",
       title: "追加リハビリ推奨（8〜11点）",
       desc: "11点以下では「良好回復（再受傷なく機能が安定した状態）」に至る確率が低下します。不足している項目を中心に、もう一段階リハビリを継続してから再評価を。",
-      color: "#c89010",
+      color: "#b07d12",
     };
   }
   if (total >= 7) {
@@ -150,14 +150,14 @@ export function interpretFull(total: number): AnkleGoInterpretation {
       tier: "caution",
       title: "慎重に（8点未満）",
       desc: "再受傷リスクが高い段階です。4か月時点でも受傷前レベルへの復帰が困難なことが多いと報告されています。復帰を急がず段階的リハビリを。",
-      color: "#cc2244",
+      color: "#c62b3e",
     };
   }
   return {
     tier: "low",
     title: "競技復帰の可能性が低い（7点未満）",
     desc: "現時点では競技復帰の準備が整っていません。基礎的な機能の再獲得から、医療者の指導のもとで進めてください。",
-    color: "#cc2244",
+    color: "#c62b3e",
   };
 }
 

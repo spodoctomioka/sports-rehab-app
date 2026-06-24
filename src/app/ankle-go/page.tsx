@@ -10,20 +10,21 @@ import {
 } from "@/lib/ankleGo";
 
 // ---- Design tokens（Rehabアプリと共通のライトテーマ）----
-const BG     = "#f0f4f8";
-const CARD   = "#ffffff";
-const BORDER = "#dce8f0";
-const GREEN  = "#00875f";
-const BLUE   = "#0080a0";
-const TEXT   = "#1a2a3a";
-const MUTED  = "#6a7f90";
-const MUTED2 = "#8a9aaa";
-const OK_BG  = "#e6f7ef";
-const OK_BORD = "#7ecba8";
+const BG     = "#f6f2ec";
+const CARD   = "#fffdf9";
+const BORDER = "#e4dcce";
+const GREEN  = "#2f5277";
+const ENJI   = "#9c2c3a";
+const BLUE   = "#5b7da3";
+const TEXT   = "#2a2420";
+const MUTED  = "#6a5f55";
+const MUTED2 = "#8a8075";
+const OK_BG  = "#e8eef4";
+const OK_BORD = "#9db4cc";
 
 const S = {
   card: { background: CARD, border: `1px solid ${BORDER}`, borderRadius: 16, padding: "20px 24px" } as React.CSSProperties,
-  label: { fontSize: 12, color: "#007a60", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 10 },
+  label: { fontSize: 12, color: "#2f5277", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" as const, marginBottom: 10 },
   input: {
     background: CARD, border: `1.5px solid ${BORDER}`, borderRadius: 8, color: TEXT,
     padding: "10px 14px", fontSize: 15, width: "100%", maxWidth: "100%",
@@ -70,7 +71,7 @@ function StableCheck({ checked, onChange }: { checked: boolean; onChange: (v: bo
       <span style={{
         width: 20, height: 20, borderRadius: 5, flexShrink: 0, fontSize: 13, fontWeight: 900,
         display: "flex", alignItems: "center", justifyContent: "center",
-        background: checked ? GREEN : "#eef2f5", color: checked ? "#fff" : MUTED2,
+        background: checked ? GREEN : "#f1ece5", color: checked ? "#fff" : MUTED2,
       }}>{checked ? "✓" : ""}</span>
       テスト中に「不安定感なし」（＋1点）
     </button>
@@ -78,7 +79,7 @@ function StableCheck({ checked, onChange }: { checked: boolean; onChange: (v: bo
 }
 
 // ---- 解説SVG（ライトテーマ／GREEN・BLUE基調・概念図）----
-const svgBox = { width: "100%", height: "auto", display: "block", background: "#f7fafc", borderRadius: 10, border: `1px solid ${BORDER}` } as React.CSSProperties;
+const svgBox = { width: "100%", height: "auto", display: "block", background: "#faf7f1", borderRadius: 10, border: `1px solid ${BORDER}` } as React.CSSProperties;
 
 function SvgSLS() {
   return (
@@ -140,7 +141,7 @@ function SvgSHT() {
       <path d="M150,84 Q110,118 70,84" fill="none" stroke={BLUE} strokeWidth="3" strokeDasharray="5 4" />
       <circle cx="70" cy="78" r="7" fill={GREEN} />
       <circle cx="150" cy="78" r="7" fill={BLUE} />
-      <line x1="70" y1="112" x2="150" y2="112" stroke="#cfdbe4" strokeWidth="3" />
+      <line x1="70" y1="112" x2="150" y2="112" stroke="#e4dcce" strokeWidth="3" />
       <text x="78" y="124" fontSize="9" fill={GREEN} fontWeight="700">左右に片脚で連続ホップ</text>
     </svg>
   );
@@ -184,7 +185,7 @@ function TestFigure({ imgSrc, Svg, alt }: { imgSrc: string; Svg: React.FC; alt: 
       src={imgSrc} alt={alt}
       style={{
         width: "100%", height: "auto", display: "block", objectFit: "contain",
-        background: "#f7fafc", borderRadius: 10, border: `1px solid ${BORDER}`,
+        background: "#faf7f1", borderRadius: 10, border: `1px solid ${BORDER}`,
       } as React.CSSProperties}
     />
   );
@@ -228,7 +229,7 @@ function FaamItem({ n, text, value, onChange }: { n: number; text: string; value
               minWidth: 40, padding: "6px 8px", borderRadius: 6, fontSize: 12, fontWeight: active ? 700 : 500,
               cursor: "pointer", fontFamily: "inherit",
               border: `1.5px solid ${active ? (isNA ? MUTED2 : GREEN) : BORDER}`,
-              background: active ? (isNA ? "#eef2f5" : OK_BG) : "transparent",
+              background: active ? (isNA ? "#f1ece5" : OK_BG) : "transparent",
               color: active ? (isNA ? TEXT : GREEN) : MUTED2,
             }}>{o.label}</button>
           );
@@ -252,7 +253,7 @@ function RsiItem({ n, q, left, right, value, onChange }: { n: number; q: string;
               width: 30, padding: "6px 0", borderRadius: 6, fontSize: 12, fontWeight: active ? 700 : 500,
               cursor: "pointer", fontFamily: "inherit",
               border: `1.5px solid ${active ? BLUE : BORDER}`,
-              background: active ? "#ddf0f8" : "transparent", color: active ? BLUE : MUTED2,
+              background: active ? "#e8eef4" : "transparent", color: active ? BLUE : MUTED2,
             }}>{i}</button>
           );
         })}
@@ -341,11 +342,11 @@ export default function AnkleGoPage() {
       }}>
         <a href="/rehab" style={{ display: "flex", alignItems: "center", gap: 12, textDecoration: "none" }}>
           <div style={{
-            width: 34, height: 34, borderRadius: 8, background: `linear-gradient(135deg, ${GREEN}, ${BLUE})`,
+            width: 34, height: 34, borderRadius: 8, background: `linear-gradient(135deg, ${ENJI}, ${GREEN})`,
             display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
           }}>🎯</div>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: "0.1em", color: GREEN, textTransform: "uppercase" }}>Ankle-GO</div>
+            <div style={{ fontSize: 14, fontWeight: 700, letterSpacing: "0.1em", color: ENJI, textTransform: "uppercase" }}>Ankle-GO</div>
             <div style={{ fontSize: 11, color: MUTED }}>足関節捻挫 復帰準備スコア</div>
           </div>
         </a>
@@ -355,9 +356,9 @@ export default function AnkleGoPage() {
       <div style={{ maxWidth: 700, margin: "0 auto", padding: "28px 20px", display: "flex", flexDirection: "column", gap: 16 }}>
 
         {/* (a) 概要 */}
-        <Card style={{ borderColor: `${BLUE}50`, background: "#f4f9fd" }}>
+        <Card style={{ borderColor: `${BLUE}50`, background: "#f6f2ec" }}>
           <SectionLabel>Ankle-GOとは</SectionLabel>
-          <p style={{ fontSize: 13, color: "#2a4060", lineHeight: 1.9, margin: 0 }}>
+          <p style={{ fontSize: 13, color: "#2f4a6e", lineHeight: 1.9, margin: 0 }}>
             足関節捻挫からの<strong>競技復帰（RTS）準備</strong>を客観的に確認するスコアです（Picot 2023/2024）。
             <strong>6項目・満点25点</strong>で、身体機能4テスト（最大18点）と質問紙3項目（最大7点）から構成されます。
             <br /><br />
@@ -381,7 +382,7 @@ export default function AnkleGoPage() {
             <span style={{
               width: 22, height: 22, borderRadius: 6, flexShrink: 0, fontSize: 13, fontWeight: 900,
               display: "flex", alignItems: "center", justifyContent: "center",
-              background: skip ? GREEN : "#eef2f5", color: skip ? "#fff" : MUTED2,
+              background: skip ? GREEN : "#f1ece5", color: skip ? "#fff" : MUTED2,
             }}>{skip ? "✓" : ""}</span>
             質問紙をスキップ（身体機能のみ・最大18点で採点）
           </button>
@@ -428,7 +429,7 @@ export default function AnkleGoPage() {
                 <NumberField label="PL 距離（ベスト値）" suffix="cm" value={plCm} onChange={setPlCm} />
               </div>
               <div style={{
-                marginTop: 10, padding: "8px 12px", borderRadius: 8, background: "#f7fafc",
+                marginTop: 10, padding: "8px 12px", borderRadius: 8, background: "#faf7f1",
                 border: `1px solid ${BORDER}`, fontSize: 12.5, color: TEXT, lineHeight: 1.8,
               }}>
                 自動換算 → COMP <strong>{fmtPct(compPctM)}</strong>／ANT <strong>{fmtPct(antPctM)}</strong>／PM <strong>{fmtPct(pmPctM)}</strong>／PL {fmtPct(plPctM)}
@@ -495,7 +496,7 @@ export default function AnkleGoPage() {
                 <span style={{
                   width: 20, height: 20, borderRadius: 5, flexShrink: 0, fontSize: 13, fontWeight: 900,
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  background: skipAdl ? GREEN : "#eef2f5", color: skipAdl ? "#fff" : MUTED2,
+                  background: skipAdl ? GREEN : "#f1ece5", color: skipAdl ? "#fff" : MUTED2,
                 }}>{skipAdl ? "✓" : ""}</span>
                 FAAM-ADLをスキップ（競技者には天井効果が出やすいため）
               </button>
@@ -513,9 +514,9 @@ export default function AnkleGoPage() {
                       ))}
                       <div style={{
                         marginTop: 12, padding: "9px 12px", borderRadius: 8,
-                        background: adlItemsValid ? "#f7fafc" : "#fff8e8",
-                        border: `1px solid ${adlItemsValid ? BORDER : "#d4a020"}`,
-                        fontSize: 12.5, color: adlItemsValid ? TEXT : "#7a5000", lineHeight: 1.7,
+                        background: adlItemsValid ? "#faf7f1" : "#fdf8ec",
+                        border: `1px solid ${adlItemsValid ? BORDER : "#b07d12"}`,
+                        fontSize: 12.5, color: adlItemsValid ? TEXT : "#7a5400", lineHeight: 1.7,
                       }}>
                         回答 {adlComp.answered}/21 ・ 算出％ <strong>{fmtPct(adlPct)}</strong>
                         {!adlItemsValid && "（有効な算出には19項目以上の回答が必要です。帯判定は保留）"}
@@ -547,9 +548,9 @@ export default function AnkleGoPage() {
                   ))}
                   <div style={{
                     marginTop: 12, padding: "9px 12px", borderRadius: 8,
-                    background: sportItemsValid ? "#f7fafc" : "#fff8e8",
-                    border: `1px solid ${sportItemsValid ? BORDER : "#d4a020"}`,
-                    fontSize: 12.5, color: sportItemsValid ? TEXT : "#7a5000", lineHeight: 1.7,
+                    background: sportItemsValid ? "#faf7f1" : "#fdf8ec",
+                    border: `1px solid ${sportItemsValid ? BORDER : "#b07d12"}`,
+                    fontSize: 12.5, color: sportItemsValid ? TEXT : "#7a5400", lineHeight: 1.7,
                   }}>
                     回答 {sportComp.answered}/8 ・ 算出％ <strong>{fmtPct(sportPct)}</strong>
                     {!sportItemsValid && "（有効な算出には7項目以上の回答が必要です。帯判定は保留）"}
@@ -568,8 +569,8 @@ export default function AnkleGoPage() {
                 帯：<strong>&lt;55→0／55〜63→1／63〜76→2／&gt;76→3</strong>。
               </p>
               <div style={{
-                marginBottom: 12, padding: "8px 12px", borderRadius: 8, background: "#fff8e8",
-                border: "1px solid #d4a020", fontSize: 12, color: "#7a5000", lineHeight: 1.7,
+                marginBottom: 12, padding: "8px 12px", borderRadius: 8, background: "#fdf8ec",
+                border: "1px solid #b07d12", fontSize: 12, color: "#7a5400", lineHeight: 1.7,
               }}>
                 ⚠️ ALR-RSIは正式な日本語版が存在しない場合があります。暫定訳を用いる際は解釈に注意してください。
               </div>
@@ -581,9 +582,9 @@ export default function AnkleGoPage() {
                   ))}
                   <div style={{
                     marginTop: 12, padding: "9px 12px", borderRadius: 8,
-                    background: rsiComp.allAnswered ? "#f7fafc" : "#fff8e8",
-                    border: `1px solid ${rsiComp.allAnswered ? BORDER : "#d4a020"}`,
-                    fontSize: 12.5, color: rsiComp.allAnswered ? TEXT : "#7a5000", lineHeight: 1.7,
+                    background: rsiComp.allAnswered ? "#faf7f1" : "#fdf8ec",
+                    border: `1px solid ${rsiComp.allAnswered ? BORDER : "#b07d12"}`,
+                    fontSize: 12.5, color: rsiComp.allAnswered ? TEXT : "#7a5400", lineHeight: 1.7,
                   }}>
                     回答 {rsiComp.answered}/12 ・ 算出％ <strong>{fmtPct(rsiPct)}</strong>
                     {!rsiComp.allAnswered && "（全12項目の回答が必要です。帯判定は保留）"}
@@ -617,7 +618,7 @@ export default function AnkleGoPage() {
                 ["ALR-RSI", rsiPct == null ? "—" : b.alrRsi, 3],
               ] as [string, number | string, number][] : []),
             ] as [string, number | string, number][]).map(([name, sc, mx]) => (
-              <div key={name} style={{ background: "#f7fafc", border: `1px solid ${BORDER}`, borderRadius: 8, padding: "8px 10px" }}>
+              <div key={name} style={{ background: "#faf7f1", border: `1px solid ${BORDER}`, borderRadius: 8, padding: "8px 10px" }}>
                 <div style={{ fontSize: 11, color: MUTED2 }}>{name}</div>
                 <div style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>{sc} <span style={{ fontSize: 11, color: MUTED2 }}>/ {mx}</span></div>
               </div>
@@ -631,11 +632,11 @@ export default function AnkleGoPage() {
               <div style={{ fontSize: 13, color: TEXT, lineHeight: 1.8 }}>{interp.desc}</div>
             </div>
           ) : (
-            <div style={{ padding: "12px 14px", borderRadius: 10, background: "#fff8e8", border: "1px solid #d4a020" }}>
-              <div style={{ fontSize: 15, fontWeight: 800, color: "#7a5000", marginBottom: 4 }}>
+            <div style={{ padding: "12px 14px", borderRadius: 10, background: "#fdf8ec", border: "1px solid #b07d12" }}>
+              <div style={{ fontSize: 15, fontWeight: 800, color: "#7a5400", marginBottom: 4 }}>
                 {skip ? `身体機能スコア ${b.physical} / 18` : `スコア ${b.total} / ${b.maxTotal}`}（参考・部分評価）
               </div>
-              <div style={{ fontSize: 13, color: "#7a5000", lineHeight: 1.8 }}>
+              <div style={{ fontSize: 13, color: "#7a5400", lineHeight: 1.8 }}>
                 正式なカットオフ（12点以上で復帰準備良好 等）は<strong>全6項目・25点満点版</strong>に基づくため、{skip ? "身体機能のみ" : "FAAM-ADLを除いた"}この部分評価には直接適用できません。参考値としてご確認ください。
               </div>
             </div>
@@ -643,10 +644,10 @@ export default function AnkleGoPage() {
 
           {/* 共通注記 */}
           <div style={{ marginTop: 12, display: "flex", flexDirection: "column", gap: 8 }}>
-            <div style={{ fontSize: 12, color: MUTED, lineHeight: 1.7, background: "#f4f6f8", border: `1px solid ${BORDER}`, borderRadius: 8, padding: "9px 12px" }}>
+            <div style={{ fontSize: 12, color: MUTED, lineHeight: 1.7, background: "#f1ece5", border: `1px solid ${BORDER}`, borderRadius: 8, padding: "9px 12px" }}>
               ⚧ <strong>女性は「良好回復（再受傷なく機能が安定した状態）」に至りにくい傾向</strong>があり、より慎重なRTS判断が必要です。
             </div>
-            <div style={{ fontSize: 12, color: MUTED, lineHeight: 1.7, background: "#f4f6f8", border: `1px solid ${BORDER}`, borderRadius: 8, padding: "9px 12px" }}>
+            <div style={{ fontSize: 12, color: MUTED, lineHeight: 1.7, background: "#f1ece5", border: `1px solid ${BORDER}`, borderRadius: 8, padding: "9px 12px" }}>
               📐 <strong>LSI（左右差）補助基準：</strong>RTSの補助として<strong>健側比（LSI）90%以上</strong>が望ましい。
               サイドホップ・フィギュアエイトは健側でも計測し、<strong>左右差10%以内</strong>を目安に確認してください。
               mSEBTのCOMP%判定にも左右差の考え方が反映されています。
@@ -664,7 +665,7 @@ export default function AnkleGoPage() {
           <a href="/rehab" style={{
             flex: 1, textAlign: "center", textDecoration: "none",
             padding: "13px 24px", borderRadius: 8, fontSize: 15, cursor: "pointer", fontFamily: "inherit",
-            background: "transparent", color: "#007a6a", border: `1.5px solid #b0ccc8`,
+            background: "transparent", color: "#2f5277", border: `1.5px solid #9db4cc`,
           }}>← リハビリプランへ戻る</a>
         </div>
       </div>

@@ -10,21 +10,22 @@ import {
 } from "@/lib/clinicalLogic";
 
 // ---- Design tokens (inline style values) ----
-const BG       = "#f0f4f8";
-const CARD     = "#ffffff";
-const BORDER   = "#dce8f0";
-const GREEN    = "#00875f";
-const BLUE     = "#0080a0";
-const TEXT     = "#1a2a3a";
-const MUTED    = "#6a7f90";
-const MUTED2   = "#8a9aaa";
-const OK_BG    = "#e6f7ef";
-const OK_BORD  = "#7ecba8";
-const NG_BG    = "#fde8ee";
-const NG_BORD  = "#f0a0b4";
-const NG_TEXT  = "#cc2244";
-const DOC_BG   = "#fff3d0";
-const DOC_BORD = "#c89010";
+const BG       = "#f6f2ec";
+const CARD     = "#fffdf9";
+const BORDER   = "#e4dcce";
+const GREEN    = "#9c2c3a";
+const KON      = "#2f5277";
+const BLUE     = "#5b7da3";
+const TEXT     = "#2a2420";
+const MUTED    = "#6a5f55";
+const MUTED2   = "#8a8075";
+const OK_BG    = "#e8eef4";
+const OK_BORD  = "#9db4cc";
+const NG_BG    = "#fbe9ec";
+const NG_BORD  = "#e6a3ad";
+const NG_TEXT  = "#c62b3e";
+const DOC_BG   = "#fbf2da";
+const DOC_BORD = "#d8b766";
 const DOC_TEXT = "#7a5000";
 
 const AGE_GROUPS = [
@@ -78,7 +79,7 @@ const S = {
   } as React.CSSProperties,
   label: {
     fontSize: 12,
-    color: "#007a60",
+    color: "#2f5277",
     fontWeight: 700,
     letterSpacing: "0.08em",
     textTransform: "uppercase" as const,
@@ -98,7 +99,7 @@ const S = {
     fontFamily: "inherit",
   } as React.CSSProperties,
   btnPrimary: {
-    background: `linear-gradient(135deg, ${GREEN}, ${BLUE})`,
+    background: `linear-gradient(135deg, ${GREEN}, ${KON})`,
     color: "#ffffff",
     border: "none",
     borderRadius: 8,
@@ -110,8 +111,8 @@ const S = {
   } as React.CSSProperties,
   btnSecondary: {
     background: "transparent",
-    color: "#007a6a",
-    border: `1.5px solid #b0ccc8`,
+    color: "#9c2c3a",
+    border: `1.5px solid #cdb0b5`,
     borderRadius: 8,
     padding: "12px 24px",
     fontSize: 15,
@@ -135,7 +136,7 @@ function Chip({
 }: { label: string; active: boolean; color?: "green" | "blue" | "red"; onClick: () => void }) {
   const colors = {
     green: { bg: OK_BG, border: OK_BORD, text: GREEN },
-    blue:  { bg: "#ddf0f8", border: "#80c4d8", text: BLUE },
+    blue:  { bg: "#e8eef4", border: "#9db4cc", text: BLUE },
     red:   { bg: NG_BG, border: NG_BORD, text: NG_TEXT },
   };
   const c = colors[color];
@@ -173,7 +174,7 @@ function StepBar({ step }: { step: number }) {
             <span style={{
               width: 22, height: 22, borderRadius: "50%", fontSize: 12, fontWeight: 700,
               display: "flex", alignItems: "center", justifyContent: "center",
-              background: step >= i ? `linear-gradient(135deg, ${GREEN}, ${BLUE})` : BORDER,
+              background: step >= i ? `linear-gradient(135deg, ${GREEN}, ${KON})` : BORDER,
               color: step >= i ? "#ffffff" : MUTED,
             }}>{i + 1}</span>
             <span style={{ fontSize: 13, color: step === i ? TEXT : MUTED, fontWeight: step === i ? 600 : 400 }}>{s}</span>
@@ -199,19 +200,19 @@ function PhaseTracker({ phases, currentIdx }: { phases: PhaseTrackerItem[]; curr
             <div key={ph.phase} style={{
               display: "flex", alignItems: "flex-start", gap: 12,
               padding: "10px 14px", borderRadius: 10,
-              background: isCurrent ? `${GREEN}18` : isDone ? "#eaf7f0" : "transparent",
-              border: `1px solid ${isCurrent ? GREEN : isDone ? "#90d8b0" : BORDER}`,
+              background: isCurrent ? `${GREEN}18` : isDone ? "#f1ece5" : "transparent",
+              border: `1px solid ${isCurrent ? GREEN : isDone ? "#9db4cc" : BORDER}`,
               opacity: i > currentIdx ? 0.4 : 1,
             }}>
               <span style={{
                 width: 22, height: 22, borderRadius: "50%", fontSize: 11, fontWeight: 700,
                 display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-                background: isCurrent ? GREEN : isDone ? "#c0e8d0" : BORDER,
+                background: isCurrent ? GREEN : isDone ? "#9db4cc" : BORDER,
                 color: isCurrent ? "#ffffff" : isDone ? GREEN : MUTED,
                 marginTop: 1,
               }}>{isDone ? "✓" : ph.phase}</span>
               <div>
-                <div style={{ fontSize: 14, fontWeight: isCurrent ? 700 : 400, color: isCurrent ? GREEN : isDone ? "#007844" : TEXT }}>
+                <div style={{ fontSize: 14, fontWeight: isCurrent ? 700 : 400, color: isCurrent ? GREEN : isDone ? "#2f5277" : TEXT }}>
                   {ph.name}
                   {isCurrent && <span style={{ marginLeft: 8, fontSize: 11, background: GREEN, color: "#ffffff", padding: "1px 6px", borderRadius: 4, fontWeight: 700 }}>現在</span>}
                 </div>
@@ -243,7 +244,7 @@ function PoliceBlock() {
           <div key={it.letter} style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
             <span style={{
               width: 28, height: 28, borderRadius: 6, flexShrink: 0,
-              background: "#ddf0f8", border: `1px solid ${BLUE}60`,
+              background: "#e8eef4", border: `1px solid ${BLUE}60`,
               color: BLUE, fontWeight: 900, fontSize: 13,
               display: "flex", alignItems: "center", justifyContent: "center",
             }}>{it.letter}</span>
@@ -276,28 +277,28 @@ function OttawaRuleBlock() {
   ];
 
   return (
-    <Card style={{ borderColor: "#f0a04060" }}>
+    <Card style={{ borderColor: "#d09a3060" }}>
       <SectionLabel>⚠️ Ottawa Ankle Rule（骨折スクリーニング）</SectionLabel>
-      <p style={{ fontSize: 13, color: "#7a5800", marginBottom: 12, lineHeight: 1.7 }}>
+      <p style={{ fontSize: 13, color: "#7a5400", marginBottom: 12, lineHeight: 1.7 }}>
         以下のいずれかを満たす場合は<strong>スポーツ整形外科にてX線撮影</strong>を推奨：
       </p>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
         {points.map((zone) => (
           <div key={zone.zone}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#b06000", marginBottom: 6, letterSpacing: "0.05em" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#9a6a10", marginBottom: 6, letterSpacing: "0.05em" }}>
               ▶ {zone.zone}
             </div>
             {zone.items.map((item) => (
               <div key={item.marker} style={{ display: "flex", gap: 8, alignItems: "flex-start", marginBottom: 6 }}>
                 <span style={{
-                  width: 20, height: 20, borderRadius: "50%", background: "#f0a040",
+                  width: 20, height: 20, borderRadius: "50%", background: "#d09a30",
                   color: "#fff", fontSize: 11, fontWeight: 700, flexShrink: 0,
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}>{item.marker}</span>
                 <div>
-                  <div style={{ fontSize: 13, color: "#7a3800", fontWeight: 600 }}>{item.label}</div>
-                  <div style={{ fontSize: 11, color: "#a07040", marginTop: 1 }}>💡 {item.hint}</div>
+                  <div style={{ fontSize: 13, color: "#7a4a10", fontWeight: 600 }}>{item.label}</div>
+                  <div style={{ fontSize: 11, color: "#9a7a40", marginTop: 1 }}>💡 {item.hint}</div>
                 </div>
               </div>
             ))}
@@ -323,7 +324,7 @@ function ThrowingProgramBlock({
       {currentStep !== undefined && (
         <div style={{
           marginBottom: 12, padding: "8px 14px", borderRadius: 8,
-          background: "#ddeeff", border: `1px solid #80c0e0`,
+          background: "#e8eef4", border: `1px solid #9db4cc`,
           fontSize: 13, color: BLUE, fontWeight: 600,
         }}>
           📍 現在の推奨ステップ：<strong>Step {currentStep}</strong>
@@ -568,7 +569,7 @@ export default function RehabApp() {
         >
           <div style={{
             width: 34, height: 34, borderRadius: 8,
-            background: `linear-gradient(135deg, ${GREEN}, ${BLUE})`,
+            background: `linear-gradient(135deg, ${GREEN}, ${KON})`,
             display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16,
           }}>🏅</div>
           <div>
@@ -587,7 +588,7 @@ export default function RehabApp() {
             <div style={{ textAlign: "center", padding: "24px 0 8px" }}>
               <div style={{
                 width: 72, height: 72, borderRadius: 20, margin: "0 auto 16px",
-                background: `linear-gradient(135deg, ${GREEN}, ${BLUE})`,
+                background: `linear-gradient(135deg, ${GREEN}, ${KON})`,
                 display: "flex", alignItems: "center", justifyContent: "center", fontSize: 34,
               }}>🏅</div>
               <h1 style={{ fontSize: 28, fontWeight: 900, marginBottom: 6, letterSpacing: "-0.01em" }}>
@@ -598,14 +599,14 @@ export default function RehabApp() {
               </p>
             </div>
 
-            <Card style={{ borderColor: `${BLUE}50`, background: "#f4f9fd" }}>
+            <Card style={{ borderColor: `${BLUE}50`, background: "#f6f2ec" }}>
               <div style={{ display: "flex", gap: 14, alignItems: "flex-start" }}>
                 <span style={{ fontSize: 28, flexShrink: 0, lineHeight: 1 }}>🏃</span>
                 <div>
                   <div style={{ fontSize: 14, fontWeight: 800, color: BLUE, marginBottom: 8, letterSpacing: "0.04em" }}>
                     このアプリについて
                   </div>
-                  <p style={{ fontSize: 13, color: "#2a4060", lineHeight: 1.9, margin: 0 }}>
+                  <p style={{ fontSize: 13, color: "#2f4a6e", lineHeight: 1.9, margin: 0 }}>
                     日本ではスポーツ医学の専門家が少なく、「痛みが引いたら復帰していいよ」といった
                     根拠に乏しい復帰指導や、電気治療だけで終わるリハビリが今も多く行われています。
                     本来は動作教育を含む適切なリハビリと、競技特性を理解した段階的な復帰計画が必要です。
@@ -618,7 +619,7 @@ export default function RehabApp() {
               </div>
             </Card>
 
-            <Card style={{ borderColor: "#d4a020", background: "#fff8e8" }}>
+            <Card style={{ borderColor: "#b07d12", background: "#fdf8ec" }}>
               <div style={{ fontSize: 13, color: "#7a5000", lineHeight: 1.9 }}>
                 ⚠️ <strong>大前提：</strong>
                 身近に信頼できるスポーツドクターがいる場合は、<strong>必ずその意見を最優先</strong>にしてください。
@@ -736,7 +737,7 @@ export default function RehabApp() {
                     <JissGrid value={jissGrade} onChange={setJissGrade} />
                     <div style={{
                       marginTop: 12, padding: "10px 14px", borderRadius: 8,
-                      background: "#fff8e8", border: "1px solid #d4a020",
+                      background: "#fdf8ec", border: "1px solid #b07d12",
                       fontSize: 12, color: "#7a5000", lineHeight: 1.8,
                     }}>
                       💡 <strong>JISS分類が分からない場合：</strong>
@@ -767,7 +768,7 @@ export default function RehabApp() {
                     {injuryId === "groin" && (
                       <div style={{
                         marginTop: 12, padding: "10px 14px", borderRadius: 8,
-                        background: "#fff8e8", border: "1px solid #d4a020",
+                        background: "#fdf8ec", border: "1px solid #b07d12",
                         fontSize: 12, color: "#7a5000", lineHeight: 1.8,
                       }}>
                         💡 <strong>分類が分からない場合：</strong>担当医師に
@@ -783,13 +784,13 @@ export default function RehabApp() {
             {/* Heat Stroke Grade III emergency alert */}
             {isHeatStrokeIII && (
               <div style={{
-                background: "#fff0f0", border: "2px solid #cc2244",
+                background: "#fff0f0", border: "2px solid #c62b3e",
                 borderRadius: 14, padding: "20px 22px",
                 display: "flex", alignItems: "flex-start", gap: 14,
               }}>
                 <span style={{ fontSize: 30, flexShrink: 0 }}>🚨</span>
                 <div>
-                  <div style={{ fontSize: 16, fontWeight: 900, color: "#cc2244", marginBottom: 8 }}>
+                  <div style={{ fontSize: 16, fontWeight: 900, color: "#c62b3e", marginBottom: 8 }}>
                     熱中症 Ⅲ度（重症）— 緊急対応が必要です
                   </div>
                   <div style={{ fontSize: 14, color: "#7a0022", lineHeight: 1.8 }}>
@@ -837,7 +838,7 @@ export default function RehabApp() {
                       const sw = Math.floor(sd / 7);
                       const future = new Date(surgeryDate) > new Date();
                       return (
-                        <p style={{ fontSize: 12, color: future ? "#d08000" : BLUE, marginTop: 8 }}>
+                        <p style={{ fontSize: 12, color: future ? "#b07d12" : BLUE, marginTop: 8 }}>
                           {future
                             ? `手術予定まで ${Math.abs(Math.floor((new Date(surgeryDate).getTime() - Date.now()) / 86400000))} 日`
                             : <>術後 <strong style={{ fontSize: 15 }}>{sw}</strong> 週（{sd}日）</>
@@ -856,7 +857,7 @@ export default function RehabApp() {
                     value={targetDate} min={today}
                     onChange={(e) => setTargetDate(e.target.value)} />
                   {targetDaysLeft !== null && (
-                    <p style={{ fontSize: 12, color: "#d08000", marginTop: 8 }}>
+                    <p style={{ fontSize: 12, color: "#b07d12", marginTop: 8 }}>
                       目標まで <strong style={{ fontSize: 15 }}>{targetDaysLeft}</strong> 日
                     </p>
                   )}
@@ -906,7 +907,7 @@ export default function RehabApp() {
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
                       <span style={{
-                        width: 32, height: 32, borderRadius: 8, background: "#ddeeff", color: BLUE,
+                        width: 32, height: 32, borderRadius: 8, background: "#e8eef4", color: BLUE,
                         display: "flex", alignItems: "center", justifyContent: "center", fontSize: 16, flexShrink: 0,
                       }}>{def.icon}</span>
                       <div>
@@ -930,7 +931,7 @@ export default function RehabApp() {
                       flex: 1, padding: 10, borderRadius: 8, fontSize: 14, fontWeight: 600,
                       border: `1.5px solid ${test.result === true ? OK_BORD : BORDER}`,
                       background: test.result === true ? OK_BG : "transparent",
-                      color: test.result === true ? GREEN : MUTED2,
+                      color: test.result === true ? KON : MUTED2,
                       cursor: blocked ? "not-allowed" : "pointer", fontFamily: "inherit", transition: "all 0.15s",
                     }}>✓ 可</button>
                     {def.allowDiscomfort && (
@@ -981,18 +982,18 @@ export default function RehabApp() {
               <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 4 }}>
                 <h1 style={{ fontSize: 26, fontWeight: 900 }}>リハビリプラン</h1>
                 <span style={{
-                  background: "#ddeeff", color: BLUE, border: `1px solid #90c8e0`,
+                  background: "#e8eef4", color: BLUE, border: `1px solid #9db4cc`,
                   borderRadius: 20, padding: "3px 12px", fontSize: 13, fontWeight: 600,
                 }}>{plan.phase}</span>
                 {age && (
                   <span style={{
-                    background: "#f0f0ff", color: "#5050c0", border: `1px solid #c0c0e8`,
+                    background: "#faf2dd", color: "#7a5400", border: `1px solid #d8b766`,
                     borderRadius: 20, padding: "3px 12px", fontSize: 13, fontWeight: 600,
                   }}>{AGE_GROUPS.find((a) => a.id === age)?.label}</span>
                 )}
                 {position && (
                   <span style={{
-                    background: "#ddf8f0", color: GREEN, border: `1px solid #80cca8`,
+                    background: "#e8eef4", color: GREEN, border: `1px solid #9db4cc`,
                     borderRadius: 20, padding: "3px 12px", fontSize: 13, fontWeight: 600,
                   }}>{position}</span>
                 )}
@@ -1033,18 +1034,18 @@ export default function RehabApp() {
 
             {/* Progress Note / Reverse Countdown */}
             {plan.progressNote && (
-              <Card style={{ borderColor: "#80c8a8", background: "#f0faf5" }}>
+              <Card style={{ borderColor: "#9db4cc", background: "#eef2f7" }}>
                 <SectionLabel>📊 復帰逆算チェック</SectionLabel>
                 <p style={{
-                  fontSize: 13, color: "#1a4030", lineHeight: 2.0,
+                  fontSize: 13, color: "#24405e", lineHeight: 2.0,
                   whiteSpace: "pre-line" as const,
                 }}>
                   {plan.progressNote}
                 </p>
                 <div style={{
                   marginTop: 10, padding: "8px 12px", borderRadius: 8,
-                  background: "#fff", border: `1px dashed #80c8a8`,
-                  fontSize: 12, color: "#2a5040", lineHeight: 1.7,
+                  background: "#fff", border: `1px dashed #9db4cc`,
+                  fontSize: 12, color: "#24405e", lineHeight: 1.7,
                 }}>
                   💡 <strong>日数はあくまで「最短ケース」の目安</strong>です。実際は機能評価の各項目をクリアした分だけ進みます。
                   日数の経過より、<strong>各項目のクリアを優先</strong>してください（目安より遅くても、項目が未クリアなら焦らず段階を守りましょう）。
@@ -1061,8 +1062,8 @@ export default function RehabApp() {
                     width: "100%", textAlign: "left", display: "flex",
                     alignItems: "center", justifyContent: "space-between",
                     padding: "12px 18px", borderRadius: showEvidence ? "12px 12px 0 0" : 12,
-                    background: "#f4f8fd", border: `1px solid #b8cfe8`,
-                    fontSize: 14, fontWeight: 700, color: "#2a4060",
+                    background: "#eef2f7", border: `1px solid #b8c6da`,
+                    fontSize: 14, fontWeight: 700, color: "#2f4a6e",
                     cursor: "pointer", fontFamily: "inherit",
                   }}
                 >
@@ -1071,10 +1072,10 @@ export default function RehabApp() {
                 </button>
                 {showEvidence && (
                   <div style={{
-                    border: `1px solid #b8cfe8`, borderTop: "none", borderRadius: "0 0 12px 12px",
-                    background: "#f4f8fd", padding: "4px 18px 16px",
+                    border: `1px solid #b8c6da`, borderTop: "none", borderRadius: "0 0 12px 12px",
+                    background: "#eef2f7", padding: "4px 18px 16px",
                   }}>
-                    <p style={{ fontSize: 13, color: "#2a4060", lineHeight: 1.8, whiteSpace: "pre-line" as const }}>
+                    <p style={{ fontSize: 13, color: "#2f4a6e", lineHeight: 1.8, whiteSpace: "pre-line" as const }}>
                       {plan.clinicalGuidance}
                     </p>
                   </div>
@@ -1094,13 +1095,13 @@ export default function RehabApp() {
                     width: "100%", textAlign: "left", display: "flex",
                     alignItems: "center", justifyContent: "space-between",
                     padding: "12px 18px", borderRadius: showOttawa ? "12px 12px 0 0" : 12,
-                    background: "#fff8ee", border: "1px solid #f0a04060",
-                    fontSize: 14, fontWeight: 700, color: "#7a3800",
+                    background: "#fdf8ec", border: "1px solid #d09a3060",
+                    fontSize: 14, fontWeight: 700, color: "#7a4a10",
                     cursor: "pointer", fontFamily: "inherit",
                   }}
                 >
                   <span>⚠️ Ottawa Ankle Rule（骨折スクリーニング）</span>
-                  <span style={{ fontSize: 12, color: "#b06000" }}>{showOttawa ? "▲ 閉じる" : "▼ 確認する"}</span>
+                  <span style={{ fontSize: 12, color: "#9a6a10" }}>{showOttawa ? "▲ 閉じる" : "▼ 確認する"}</span>
                 </button>
                 {showOttawa && (
                   <div style={{ borderRadius: "0 0 12px 12px", overflow: "hidden" }}>
@@ -1117,8 +1118,8 @@ export default function RehabApp() {
                 <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                   {plan.okList.map((item, i) => (
                     <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
-                      <span style={{ color: GREEN, fontSize: 13, flexShrink: 0, marginTop: 1 }}>●</span>
-                      <span style={{ fontSize: 13, lineHeight: 1.5, color: "#2a5040" }}>{item}</span>
+                      <span style={{ color: KON, fontSize: 13, flexShrink: 0, marginTop: 1 }}>●</span>
+                      <span style={{ fontSize: 13, lineHeight: 1.5, color: "#24405e" }}>{item}</span>
                     </div>
                   ))}
                 </div>
@@ -1129,7 +1130,7 @@ export default function RehabApp() {
                   {plan.ngList.map((item, i) => (
                     <div key={i} style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
                       <span style={{ color: NG_TEXT, fontSize: 13, flexShrink: 0, marginTop: 1 }}>●</span>
-                      <span style={{ fontSize: 13, lineHeight: 1.5, color: "#7a3040" }}>{item}</span>
+                      <span style={{ fontSize: 13, lineHeight: 1.5, color: "#8a2632" }}>{item}</span>
                     </div>
                   ))}
                 </div>
@@ -1143,7 +1144,7 @@ export default function RehabApp() {
                 <>
                   <div style={{
                     marginBottom: 12, padding: "9px 13px", borderRadius: 8,
-                    background: "#fff3d0", border: "1px solid #c89010",
+                    background: "#fbf2da", border: "1px solid #d8b766",
                     fontSize: 12, color: "#7a5000", lineHeight: 1.7,
                   }}>
                     ⚠️ <strong>全エクササイズ共通：</strong>
@@ -1169,8 +1170,8 @@ export default function RehabApp() {
                       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                         <span style={{ fontSize: 15, fontWeight: 700 }}>{item.title}</span>
                         <span style={{
-                          fontSize: 12, color: BLUE, background: "#ddeeff",
-                          border: `1px solid #90c8e0`, borderRadius: 4, padding: "2px 10px", whiteSpace: "nowrap",
+                          fontSize: 12, color: BLUE, background: "#e8eef4",
+                          border: `1px solid #9db4cc`, borderRadius: 4, padding: "2px 10px", whiteSpace: "nowrap",
                         }}>{item.sets}</span>
                       </div>
                       <div style={{ fontSize: 13, color: MUTED2 }}>{item.note}</div>
@@ -1182,7 +1183,7 @@ export default function RehabApp() {
                               marginTop: 8, padding: "4px 12px", borderRadius: 6,
                               fontSize: 12, fontWeight: 600, cursor: "pointer",
                               fontFamily: "inherit", transition: "all 0.15s",
-                              background: isOpen ? "#e6f7ef" : "#f4f6f8",
+                              background: isOpen ? "#e8eef4" : "#f1ece5",
                               color: isOpen ? GREEN : MUTED,
                               border: `1px solid ${isOpen ? OK_BORD : BORDER}`,
                             }}
@@ -1192,7 +1193,7 @@ export default function RehabApp() {
                           {isOpen && (
                             <div style={{
                               marginTop: 8, padding: "12px 14px", borderRadius: 10,
-                              background: "#f8fafb", border: `1px solid ${BORDER}`,
+                              background: "#faf7f1", border: `1px solid ${BORDER}`,
                               fontSize: 13, color: TEXT, lineHeight: 1.75,
                               whiteSpace: "pre-wrap",
                             }}>
@@ -1250,10 +1251,10 @@ export default function RehabApp() {
                         gap: 10, padding: "10px 0", borderBottom: `1px solid ${BORDER}20`,
                       }}>
                         <span style={{ fontSize: 11, color: BLUE, fontWeight: 600 }}>{row.week}</span>
-                        <span style={{ fontSize: 12, color: "#2a4050" }}>{row.goal}</span>
+                        <span style={{ fontSize: 12, color: "#2a2420" }}>{row.goal}</span>
                         <span style={{ fontSize: 12, color: MUTED2 }}>{row.activity}</span>
                         {hasCriteria && (
-                          <span style={{ fontSize: 11, color: "#007a60", fontWeight: 600 }}>
+                          <span style={{ fontSize: 11, color: "#2f5277", fontWeight: 600 }}>
                             {row.criteria ? `✓ ${row.criteria}` : "—"}
                           </span>
                         )}
@@ -1275,7 +1276,7 @@ export default function RehabApp() {
             {/* Alert */}
             {plan.alert && (
               <div style={{
-                background: "#fff8e8", border: "1px solid #d4a020",
+                background: "#fdf8ec", border: "1px solid #b07d12",
                 borderRadius: 12, padding: "14px 18px",
                 display: "flex", alignItems: "flex-start", gap: 12,
               }}>
@@ -1292,7 +1293,7 @@ export default function RehabApp() {
                   width: "100%", textAlign: "left", display: "flex",
                   alignItems: "center", justifyContent: "space-between",
                   padding: "12px 18px", borderRadius: showGlossary ? "12px 12px 0 0" : 12,
-                  background: "#eef4f8", border: `1px solid ${BORDER}`,
+                  background: "#f1ece5", border: `1px solid ${BORDER}`,
                   fontSize: 14, fontWeight: 700, color: TEXT,
                   cursor: "pointer", fontFamily: "inherit",
                 }}
@@ -1321,7 +1322,7 @@ export default function RehabApp() {
 
             {/* Disclaimer */}
             <div style={{
-              background: "#f4f6f8", border: `1px solid ${BORDER}`,
+              background: "#f1ece5", border: `1px solid ${BORDER}`,
               borderRadius: 8, padding: "12px 16px",
               display: "flex", flexDirection: "column", gap: 6,
             }}>
