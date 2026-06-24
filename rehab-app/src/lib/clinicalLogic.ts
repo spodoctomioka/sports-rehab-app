@@ -174,6 +174,15 @@ export const MENISCUS_PHASES: PhaseTrackerItem[] = [
   { phase: 6, name: "競技復帰期",               desc: "全機能基準クリア・段階的復帰",           duration: "全基準クリアで復帰" },
 ];
 
+// 腱板損傷（保存療法）。機能ベースで進行：疼痛/圧痛→ROMフル→腱板テスト全合格&筋力→段階的復帰→復帰。
+export const ROTATOR_CUFF_PHASES: PhaseTrackerItem[] = [
+  { phase: 1, name: "疼痛コントロール期",     desc: "安静時/夜間痛・圧痛の軽減・無痛ROM",          duration: "安静時/夜間痛・圧痛消失まで" },
+  { phase: 2, name: "可動域回復期",           desc: "挙上・外旋・内旋をフル（左右差なし・無痛）",   duration: "ROMフルまで" },
+  { phase: 3, name: "腱板筋力・機能回復期",   desc: "腱板・肩甲帯の強化・腱板テスト陰性化",         duration: "腱板テスト全合格＆筋力まで" },
+  { phase: 4, name: "段階的復帰期",           desc: "OH競技=段階的投球／他=個人→対人→試合形式",   duration: "段階的復帰課題クリアまで" },
+  { phase: 5, name: "競技復帰期",             desc: "全機能基準クリア・段階的復帰",                duration: "全基準クリアで復帰" },
+];
+
 // ---- Grades by Injury ----
 
 export interface GradeOption { value: string; label: string; desc: string }
@@ -200,10 +209,7 @@ export const GRADES_BY_INJURY: Partial<Record<InjuryId, GradeOption[]>> = {
     { value: "progressive", label: "進行期（骨折線あり）", desc: "両側性・骨折線明瞭" },
     { value: "terminal",    label: "終末期（偽関節）",   desc: "骨癒合困難・偽関節形成" },
   ],
-  rotator_cuff: [
-    { value: "partial",  label: "部分断裂", desc: "腱板の部分的断裂" },
-    { value: "complete", label: "完全断裂", desc: "腱板の完全断裂" },
-  ],
+  // rotator_cuff: グレード不要（断裂型は画像/医師判断で本アプリ対象外）。機能評価で進行。
   shoulder_dislocation: [
     { value: "first",     label: "初回脱臼",   desc: "初回の肩関節前方脱臼" },
     { value: "recurrent", label: "反復性脱臼", desc: "2回以上の脱臼歴あり" },
@@ -254,7 +260,7 @@ export const INJURY_TYPES: InjuryDef[] = [
   { id: "meniscus",             label: "半月板損傷",                 area: "下肢", usesJiss: false, icon: "🦴" },
   { id: "stress_fracture",      label: "下肢疲労骨折",               area: "下肢", usesJiss: false, icon: "🦴", showDoctorOption: true },
   { id: "spondylolysis",        label: "腰椎分離症",                 area: "体幹", usesJiss: false, icon: "🦴", showDoctorOption: true },
-  { id: "rotator_cuff",         label: "腱板損傷",                   area: "上肢", usesJiss: false, icon: "💪", hasSurgery: true },
+  { id: "rotator_cuff",         label: "腱板損傷",                   area: "上肢", usesJiss: false, icon: "💪" },
   { id: "shoulder_dislocation", label: "肩関節脱臼",                 area: "上肢", usesJiss: false, icon: "💪", showDoctorOption: true, hasSurgery: true },
   { id: "elbow_throwing",       label: "投球障害肘（内側型）",       area: "上肢", usesJiss: false, icon: "⚾", hasSurgery: true },
   { id: "concussion",           label: "脳震盪",                       area: "頭部", usesJiss: false, icon: "🧠", showDoctorOption: true },
@@ -318,10 +324,10 @@ export const TESTS_BY_INJURY: Record<InjuryId, TestItem[]> = {
     { id: "okSportMove",  title: "競技動作可（画像確認）",   description: "体幹回旋・伸展・ジャンプ・ランニングなど競技特異的動作が無痛で可能か。骨癒合は画像（CT/MRI）で確認。再発予防の体づくり（体幹・柔軟性）が完了しているか。", icon: "🏅" },
   ],
   rotator_cuff: [
-    { id: "okPainFree",  title: "安静時疼痛なし",   description: "安静時・夜間の疼痛が消失しているか",           icon: "😴" },
-    { id: "okROM",       title: "肩関節ROM",        description: "挙上・外旋・内旋の可動域が正常範囲か",         icon: "↕" },
-    { id: "okStrength",  title: "腱板筋力",         description: "外旋・外転筋力が健側比75%以上か",             icon: "💪" },
-    { id: "okOverhead",  title: "オーバーヘッド動作", description: "疼痛なく頭上動作が可能か",                   icon: "🙌" },
+    { id: "okPainFree", title: "安静時・夜間痛なし＆圧痛なし",   description: "安静時・夜間の肩の疼痛が消失し、腱板部（大結節など）の圧痛もないか。保存療法はまず疼痛・炎症のコントロールから始めます。",                                                              icon: "😴" },
+    { id: "okROM",      title: "肩ROMフル（左右差なし・無痛）", description: "挙上・外旋・内旋の可動域が健側と同等（フル）で、最終域でも疼痛がないか。",                                                                                              icon: "↕" },
+    { id: "okStrength", title: "腱板テスト全合格＆筋力",        description: "腱板の各誘発テスト（empty can／外旋・外転抵抗／lift-off・belly-press など）がいずれも無痛・陰性で、外旋・外転筋力が健側と遜色ないか。医療者のもとで実施してください。",       icon: "💪" },
+    { id: "okReturn",   title: "段階的復帰課題クリア",          description: "【オーバーヘッド競技】野球肘と同じ段階的投球プログラムを疼痛なく完了したか。【その他の競技】個人練習→対人→試合形式へ進め、各段階で疼痛・不安なくクリアしたか。",              icon: "🏅" },
   ],
   shoulder_dislocation: [
     { id: "okImmobDone",    title: "固定期終了＆安静時痛なし",   description: "医師に指示された固定（スリング）期間を終え、安静時・夜間の肩の疼痛が消失しているか。固定期間は脱臼の方向・程度により異なるため必ず医師の指示に従ってください。", icon: "😴" },
@@ -2700,6 +2706,150 @@ function elbowThrowingPlan(p: GeneratePlanParams): RehabPlan {
 
 // --- Generic Plan ---
 
+// --- Rotator Cuff（腱板損傷・保存療法） ---
+// 機能ベース・グレードなし。先生の臨床基準（全腱板テスト合格＆ROMフル＆圧痛なし→段階的復帰）に準拠。
+// オーバーヘッド競技（野球・アメフト＝投球プログラム対応競技）は段階的投球（野球肘と同じ）へ、
+// その他は個人練習→対人→試合形式へ段階的復帰。出典：Kuhn 2013/2024・Ryösä 2017・Lowry 2024・Dickinson 2023・Bi 2024。
+function rotatorCuffPlan(p: GeneratePlanParams): RehabPlan {
+  const td = getTargetDays(p.targetDate);
+  // 投球プログラムが用意されている競技（野球＝塁間/マウンド・アメフト＝ルート）。
+  const isThrowingSport = p.sport === "baseball" || p.sport === "american_football";
+
+  const okPainFree = t(p.tests, "okPainFree");
+  const okROM      = t(p.tests, "okROM");
+  const okStrength = t(p.tests, "okStrength");
+  const okReturn   = t(p.tests, "okReturn");
+
+  let idx = 0;
+  if      (!okPainFree) idx = 0; // 疼痛コントロール期
+  else if (!okROM)      idx = 1; // 可動域回復期
+  else if (!okStrength) idx = 2; // 腱板筋力・機能回復期
+  else if (!okReturn)   idx = 3; // 段階的復帰期
+  else                  idx = 4; // 競技復帰可
+
+  type D = { summary: string; okList: string[]; ngList: string[]; rehabMenu: RehabMenuItem[]; timeline: TimelineRow[]; alert: string };
+  const data: D[] = [
+    {
+      summary: "腱板損傷（保存療法）の疼痛コントロール期です。安静時・夜間の痛みと腱板部の圧痛を引かせます。非外傷性（変性）の腱板断裂は、まず運動療法を中心とした保存治療が第一選択で、多くが手術を回避できます。",
+      okList: ["痛みの出ない範囲での日常使用", "疼痛・炎症のコントロール（必要に応じ医師処方）", "肩甲骨セッティング・姿勢の調整", "痛みのない範囲の振り子運動・自動介助での可動域運動"],
+      ngList: ["痛みを伴うオーバーヘッド動作の反復", "重い物の挙上・運搬", "投球・スパイク・サーブ等の競技動作", "夜間痛を悪化させる肢位での就寝"],
+      rehabMenu: [
+        { title: "疼痛・炎症コントロール", sets: "適宜", note: "負荷調整・アイシング（必要に応じ医師処方）", details: "痛みを誘発する動作（特に痛みの出るオーバーヘッド）を一時的に避け、必要に応じてアイシングや医師処方の薬剤で疼痛・炎症をコントロールします。安静時・夜間痛と腱板部の圧痛が引くことが次段階への目安です。" },
+        { title: "振り子運動・自動介助ROM", sets: "各10回 × 2〜3", note: "Codman振り子・反対手の介助で痛みなく", details: "前かがみで腕を脱力して揺らす振り子運動（Codman）や、反対の手で介助しながらの可動域運動を、痛みの出ない範囲で行います。肩を固めず、痛みのない可動性を保ちます。" },
+        { title: "肩甲骨セッティング・姿勢", sets: "10秒 × 10", note: "肩甲骨を軽く後下方へ・猫背の是正", details: "肩甲骨を軽く後ろ下方に引く感覚で安定させ、猫背・巻き肩の姿勢を整えます。肩甲骨の土台が安定すると腱板への負担が減ります。" },
+      ],
+      timeline: [
+        { week: "現在：疼痛コントロール期", goal: "安静時/夜間痛・圧痛の消失", activity: "疼痛管理・無痛ROM・姿勢調整" },
+        { week: "→ 痛み・圧痛消失で",       goal: "可動域回復",             activity: "挙上・外旋・内旋をフルへ" },
+        { week: "→ ROMフルで",             goal: "腱板筋力・機能回復",     activity: "腱板・肩甲帯の段階的強化" },
+      ],
+      alert: "外傷性の若年・全層断裂など一部は手術適応のことがあります。保存治療で改善しない・脱力が強い場合は専門医評価を受けてください。評価は医療者のもとで行ってください。",
+    },
+    {
+      summary: "痛み・圧痛が落ち着きました。可動域回復期です。挙上・外旋・内旋の可動域を健側と同等（フル）まで、痛みなく回復させます。",
+      okList: ["自動・自動介助での全方向ROM", "後方ストレッチ（制限があればクロスボディ・スリーパー）", "肩甲骨の可動性・胸郭の柔軟性", "痛みのない範囲の軽い等尺性"],
+      ngList: ["痛みを我慢した最終域への押し込み", "重負荷の挙上・オーバーヘッド", "競技動作（投球・スパイク・サーブ等）", "痛み・夜間痛が再燃する負荷"],
+      rehabMenu: [
+        { title: "全方向の可動域運動", sets: "各10〜15回 × 3", note: "挙上・外旋・内旋。痛みの手前まで", details: "壁を指で登る、棒を使った外旋・挙上補助など、自動〜自動介助で全方向の可動域を健側と同等まで段階的に広げます。最終域での痛みの手前で止め、反動はつけません。" },
+        { title: "後方/肩甲帯の柔軟性", sets: "30秒 × 3", note: "後方タイトネスがあればクロスボディ等", details: "肩後方のタイトネスがある場合はクロスボディ・スリーパーストレッチで改善します。肩甲骨周囲・胸郭の柔軟性も併せて整えます。" },
+        { title: "軽い等尺性（痛みなし）", sets: "10秒 × 10", note: "外旋・内旋・外転を壁押しで", details: "関節を動かさずに外旋・内旋・外転方向へ軽く力を入れる等尺性を、痛みの出ない範囲で行い、筋力強化期への土台をつくります。" },
+      ],
+      timeline: [
+        { week: "現在：可動域回復期", goal: "ROMフル（左右差なし・無痛）", activity: "全方向ROM・柔軟性" },
+        { week: "→ ROMフルで",       goal: "腱板筋力・機能回復",         activity: "腱板・肩甲帯の段階的強化" },
+        { week: "→ 腱板テスト合格で", goal: "段階的復帰",                 activity: "投球プログラム／個人→対人→試合" },
+      ],
+      alert: "可動域の左右差・最終域の痛みが残る間は筋力強化へ進めません。痛み・夜間痛が再燃したら一段階戻します。",
+    },
+    {
+      summary: "可動域が回復しました。腱板筋力・機能回復期です。腱板（外旋・外転）と肩甲帯の筋力を段階的に強化し、各腱板テストが無痛・陰性になることを目指します。非外傷性断裂に対するMOON型の保存的運動療法に基づきます。",
+      okList: ["腱板強化（外旋・内旋・外転：バンド→軽ダンベル）", "肩甲帯強化（ローイング・前鋸筋）", "オープン＋クローズドチェーンの併用", "プライオメトリクスの早期導入（軽負荷バンド）"],
+      ngList: ["痛みを伴う高負荷・反復オーバーヘッド", "腱板テストが陽性（痛み）の段階での競技動作", "投球・スパイク・サーブ等のフル強度", "翌日に痛み・夜間痛が出る負荷"],
+      rehabMenu: [
+        { title: "腱板強化（外旋・内旋・外転）", sets: "15〜20回 × 3", note: "セラバンド→軽ダンベル。フォーム重視で漸増", details: "セラバンドや軽ダンベルで外旋・内旋・外転を強化します。痛みの出ない範囲・正しいフォームで開始し、翌日に悪化がなければ段階的に負荷を上げます。腱板の各誘発テスト（empty can・外旋抵抗・lift-off/belly-press 等）が無痛・陰性になることが目標です（医療者評価）。" },
+        { title: "肩甲帯強化", sets: "12〜15回 × 3", note: "ローイング・前鋸筋（プッシュアッププラス等）", details: "ローイング・前鋸筋エクササイズで肩甲骨を安定させます。肩甲骨の安定は腱板の働きやすさと再発予防の基盤です。" },
+        { title: "プライオメトリクス（早期・軽負荷）", sets: "各10回 × 3", note: "バンドの速い求心性→ゆっくり遠心性・ドロップ&キャッチ", details: "軽負荷のバンドやボールで、速い求心性→ゆっくりした遠心性、ドロップ&キャッチなどを早期から取り入れ、競技動作に向けた腱板の反応性を高めます（投球肩のRTS原則）。" },
+      ],
+      timeline: [
+        { week: "現在：腱板筋力・機能回復期", goal: "腱板テスト全合格＆筋力", activity: "腱板・肩甲帯強化・プライオ" },
+        { week: "→ 腱板テスト合格で",         goal: "段階的復帰",           activity: isThrowingSport ? "段階的投球プログラム" : "個人→対人→試合形式" },
+        { week: "→ 段階的復帰クリアで",       goal: "競技復帰",             activity: "段階的にフル参加→試合" },
+      ],
+      alert: "腱板の各誘発テストが無痛・陰性で、ROMフル・圧痛なしが揃ってから段階的復帰へ進みます。評価は医療者のもとで行ってください。",
+    },
+    {
+      summary: isThrowingSport
+        ? "腱板テスト合格・ROMフル・圧痛なしを確認。段階的復帰期です。野球肘と同じ段階的投球プログラム（下記）に沿って距離・強度を段階的に上げます。投球後の疼痛・翌日の状態を確認しながら進め、1段階ごとに問題なければ次へ。"
+        : "腱板テスト合格・ROMフル・圧痛なしを確認。段階的復帰期です。個人練習（競技動作の単独反復）→ 対人（パス・ラリー・軽い実戦）→ 試合形式へ、各段階で疼痛・不安なくクリアしながら段階的に復帰します。評価は医療者のもとで。",
+      okList: isThrowingSport
+        ? ["段階的投球プログラム（下のプログラム参照）", "投球後のアイシング・肩甲骨ケア", "腱板・肩甲帯筋力の維持", "投球数・強度の管理（急増を避ける）"]
+        : ["個人練習（競技動作の単独反復）から開始", "問題なければ対人練習（パス・ラリー・軽い実戦）へ", "次いで試合形式へ段階的に", "各段階で疼痛・不安・翌日の状態を確認"],
+      ngList: ["痛みを我慢した競技動作の継続", "段階を飛ばして一気に全強度へ戻すこと", "翌日に疼痛・夜間痛が出る負荷", "違和感・脱力がある状態での無理な実戦"],
+      rehabMenu: isThrowingSport
+        ? [
+            { title: "段階的投球プログラム", sets: "下記プログラム参照", note: "距離・強度を段階的に。投球後の症状を確認", details: "野球肘と同じ段階的投球プログラム（競技別：野球＝塁間・マウンド／アメフト＝ルート）に沿って、距離・球数・強度を段階的に上げます。各ステップで投球後の疼痛・翌日の状態を確認し、問題があれば1段階戻します。" },
+            { title: "腱板・肩甲帯筋力の維持", sets: "15回 × 3", note: "外旋・内旋・前鋸筋・ローイング", details: "投球再開後も腱板・肩甲帯の強化を継続し、疲労による機能低下を防ぎます。" },
+            { title: "投球後ケア・負荷管理", sets: "毎回", note: "アイシング・肩甲骨ケア・球数管理", details: "投球後のアイシングと肩甲骨ケアをルーティン化し、肩特異的RPEで週単位の負荷をモニタリングして急増を避けます。" },
+          ]
+        : [
+            { title: "個人練習（単独反復）", sets: "段階的", note: "競技動作を単独で・低強度から", details: "競技で必要な動作（スイング・サーブ・シュート等）を、対人なしで低強度から反復します。痛み・不安なく行えれば次の対人へ進みます。" },
+            { title: "対人練習へ移行", sets: "段階的", note: "パス・ラリー・軽い実戦", details: "対人でのパス・ラリー・軽い実戦に進みます。接触・予測できない負荷でも肩に痛み・不安が出ないことを確認します。" },
+            { title: "試合形式へ", sets: "段階的", note: "実戦に近い強度→フル参加", details: "試合形式の練習に段階的に参加し、フル強度・実戦に近い負荷で問題がないことを確認してから競技復帰します。各段階で翌日の状態を確認します。" },
+          ],
+      timeline: [
+        { week: "現在：段階的復帰期", goal: isThrowingSport ? "段階的投球プログラム完了" : "個人→対人→試合をクリア", activity: isThrowingSport ? "距離・強度の段階的アップ" : "個人練習→対人→試合形式" },
+        { week: "→ 復帰課題クリアで", goal: "競技復帰", activity: "段階的にフル参加→試合" },
+      ],
+      alert: "段階を飛ばさず、各段階で疼痛・不安・翌日の状態を確認しながら進めます。痛みを我慢した継続は再燃・増悪の原因になります。",
+    },
+    {
+      summary: "腱板テスト全合格・ROMフル・圧痛なし、かつ段階的復帰課題をクリアしました。競技へ完全復帰できる状態です。再発予防に腱板・肩甲帯の強化と負荷管理を継続してください。",
+      okList: ["競技へのフル参加・試合出場", "腱板・肩甲帯筋力の維持（予防プログラムは最低週2回）", "負荷管理（肩特異的RPEで週単位モニタリング・急増回避）", "違和感・夜間痛が出たら負荷を調整"],
+      ngList: ["痛み・夜間痛を我慢しての継続", "急激な練習量・投球数の増加", "腱板・肩甲帯ケアの中断"],
+      rehabMenu: [
+        { title: "腱板・肩甲帯の維持トレ", sets: "15回 × 3（週2回以上）", note: "外旋・内旋・前鋸筋・ローイング", details: "復帰後も腱板・肩甲帯の強化を予防プログラムとして最低週2回継続します。再発予防の基盤です。" },
+        { title: "負荷管理", sets: "継続", note: "肩特異的RPE・投球数/強度の管理", details: "週単位の負荷を肩特異的RPE（修正Borg）でモニタリングし、急増を避けます。オーバーヘッド競技では投球数・球速の管理を継続します。" },
+      ],
+      timeline: [
+        { week: "現在：競技復帰期",   goal: "競技完全復帰", activity: "フル参加→試合" },
+        { week: "復帰後シーズン中", goal: "再発予防継続",   activity: "腱板・肩甲帯維持・負荷管理" },
+      ],
+      alert: "復帰後も夜間痛・脱力・圧痛が出たら負荷を見直してください。腱板・肩甲帯の強化と負荷管理の継続が再発予防の鍵です。",
+    },
+  ];
+
+  const fullyReturned = okReturn;
+  const phaseLabel = fullyReturned && idx === 4 ? "競技復帰可（機能基準クリア）" : ROTATOR_CUFF_PHASES[idx].name;
+
+  const ROTATOR_CUFF_GUIDANCE =
+    "■ 腱板損傷（保存療法）※本プランは非手術（保存）を対象\n" +
+    "・非外傷性（変性）の腱板断裂は運動療法を中心とした保存治療が第一選択。非外傷性全層断裂への理学療法プログラムで約75%が2年時点で手術を回避（Kuhn JE, et al. J Shoulder Elbow Surg 2013;22(10):1371-1379. doi:10.1016/j.jse.2013.01.026）。10年追跡でも多くが保存を継続でき、手術移行の規定因子は経時的に変化（Kuhn JE, et al. J Bone Joint Surg Am 2024;106(17):1563-1572. doi:10.2106/JBJS.23.00978）。\n" +
+    "・手術 vs 保存のメタ解析でも多くの患者報告アウトカムで明確な差は示されていない（Ryösä A, et al. Disabil Rehabil 2017;39(14):1357-1363. doi:10.1080/09638288.2016.1198431）。各種診療ガイドラインでも保存治療が初期管理の中心（Lowry V, et al. Arch Phys Med Rehabil 2024;105(2):411-426. doi:10.1016/j.apmr.2023.09.022）。\n" +
+    "・保存の具体的進め方（疼痛コントロール→ROM→腱板/肩甲帯の段階的強化）：Dickinson RN, Kuhn JE. Phys Med Rehabil Clin N Am 2023;34(2):335-355. doi:10.1016/j.pmr.2022.12.002。部分層断裂の評価・管理：Bi AS, et al. JBJS Rev 2024;12(8). doi:10.2106/JBJS.RVW.24.00063。\n" +
+    "■ 進め方（機能ベース・臨床基準）\n" +
+    "・安静時/夜間痛・圧痛の消失 → ROMフル（左右差なし・無痛）→ 全腱板テスト合格＆筋力 → 【オーバーヘッド競技】野球肘と同じ段階的投球プログラム／【その他】個人練習→対人→試合形式 → 競技復帰。暦ではなく機能基準で進める（評価は医療者のもとで）。\n" +
+    "※ 外傷性の若年・全層断裂など一部は手術適応のことがあり、保存で改善しない場合は専門医評価を。";
+
+  return {
+    phase: `Phase ${idx + 1}：${phaseLabel}`,
+    currentPhaseIndex: idx,
+    totalPhases: 5,
+    summary: data[idx].summary,
+    okList: data[idx].okList,
+    ngList: data[idx].ngList,
+    rehabMenu: data[idx].rehabMenu,
+    timeline: td ? [...data[idx].timeline, { week: "目標日", goal: "大会・試合", activity: `${td}日後` }] : data[idx].timeline,
+    alert: data[idx].alert,
+    phaseTracker: ROTATOR_CUFF_PHASES,
+    clinicalGuidance: ROTATOR_CUFF_GUIDANCE + (isThrowingSport ? "\n\n" + SHOULDER_RTS_GUIDANCE : ""),
+    // オーバーヘッド（投球）競技は段階的復帰期から投球プログラムを表示（野球肘と同じ競技別プログラム）。
+    throwingProgram: (isThrowingSport && idx >= 3) ? getThrowingProgram(p.sport) : undefined,
+    throwingCurrentStep: (isThrowingSport && idx >= 3)
+      ? (() => { const last = getThrowingProgram(p.sport).length; return idx >= 4 ? last : 1; })()
+      : undefined,
+  };
+}
+
 function genericPlan(p: GeneratePlanParams): RehabPlan {
   const days = getDays(p.injuryDate);
   const inj  = INJURY_TYPES.find((x) => x.id === p.injuryId);
@@ -3452,6 +3602,8 @@ export function generatePlan(p: GeneratePlanParams): RehabPlan {
       result = anklePlan(p); break;
     case "meniscus":
       result = meniscusPlan(p); break;
+    case "rotator_cuff":
+      result = rotatorCuffPlan(p); break;
     case "mcl":
       result = mclPlan(p); break;
     case "concussion":
@@ -3476,7 +3628,7 @@ export function generatePlan(p: GeneratePlanParams): RehabPlan {
   // POLICE: 急性外傷で受傷7日以内に表示。
   // 除外：脳震盪・熱中症（性質が異なる）、肩関節脱臼（下肢向けPOLICE原則が馴染まない）、
   //       腰椎分離症・下肢疲労骨折（緩徐発症の骨ストレス障害で受傷日/72時間/アイシングの概念が当てはまらない）。
-  const noPolice = ["concussion", "heat_stroke", "shoulder_dislocation", "spondylolysis", "stress_fracture", "groin"];
+  const noPolice = ["concussion", "heat_stroke", "shoulder_dislocation", "rotator_cuff", "spondylolysis", "stress_fracture", "groin"];
   const daysFromInjury = getDays(p.injuryDate);
   if (!noPolice.includes(p.injuryId) && daysFromInjury <= 7) {
     result = { ...result, showPolice: true };
