@@ -20,14 +20,47 @@ export async function cloudFetchPlayers(): Promise<any[] | null> {
 }
 
 /**
+ * この端末が「クラウドに保存済み」と認識している各選手データのスナップショット。
+ * key=選手id / value=その時点の data を JSON 文字列化したもの。
+ * 保存時はこれと内容が変わった選手だけを upsert する。
+ * → 古い値を保持した端末が、自分が触っていない選手まで巻き戻すのを防ぐ。
+ */
+const syncedSnapshot = new Map<string, string>();
+
+function serializePlayer(p: any): string {
+  return JSON.stringify(p);
+}
+
+/**
+ * スナップショットを丸ごと再構築する。
+ * ローカルキャッシュ読込後・クラウド取得後など、
+ * 「いま手元にあるデータ＝この端末が認識しているクラウド状態」を確定したタイミングで呼ぶ。
+ */
+export function cloudSeedSnapshot(players: any[]): void {
+  syncedSnapshot.clear();
+  for (const p of players) {
+    if (p && p.id) syncedSnapshot.set(p.id, serializePlayer(p));
+  }
+}
+
+/**
  * 選手リストをクラウドへ Upsert のみで同期。
- * ※ 自動削除は行わない。古いデバイスが保存しても他デバイスで登録した
- *   選手が消えないよう、削除は cloudDeletePlayer() を明示的に呼ぶ。
+ * ※ 全件ではなく、スナップショットと差分のある選手だけを書き込む。
+ *   これにより、古い端末が1人だけ編集しても、触っていない選手の
+ *   古い値を他端末へ巻き戻すことがない（再汚染対策）。
+ * ※ 自動削除は行わない。削除は cloudDeletePlayer() を明示的に呼ぶ。
  */
 export async function cloudSavePlayers(players: any[]): Promise<void> {
   if (!supabase || players.length === 0) return;
   try {
-    const rows = players.map(p => ({
+    // スナップショットと内容が変わった選手（新規含む）だけ抽出
+    const changed = players.filter(p => {
+      if (!p || !p.id) return false;
+      return syncedSnapshot.get(p.id) !== serializePlayer(p);
+    });
+    if (changed.length === 0) return;
+
+    const rows = changed.map(p => ({
       id: p.id,
       data: p,
       updated_at: new Date().toISOString(),
@@ -35,7 +68,10 @@ export async function cloudSavePlayers(players: any[]): Promise<void> {
     const { error } = await supabase
       .from('players')
       .upsert(rows, { onConflict: 'id' });
-    if (error) console.error('[Supabase] upsert error:', error);
+    if (error) { console.error('[Supabase] upsert error:', error); return; }
+
+    // 書き込みに成功した分だけスナップショットを更新
+    for (const p of changed) syncedSnapshot.set(p.id, serializePlayer(p));
   } catch (err) {
     console.error('[Supabase] sync error:', err);
   }

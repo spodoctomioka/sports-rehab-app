@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { isSupabaseEnabled, cloudFetchPlayers, cloudSavePlayers, cloudDeletePlayer } from "@/lib/supabase";
+import { isSupabaseEnabled, cloudFetchPlayers, cloudSavePlayers, cloudDeletePlayer, cloudSeedSnapshot } from "@/lib/supabase";
 
 // ---- OWLS Design Tokens ----
 const BG       = "#FBF7F0";
@@ -2871,6 +2871,8 @@ export default function WeightApp(){
   const scrollSaveRef=useRef<Partial<Record<Screen,number>>>({});
   // 「戻る」ナビゲーションかどうかのフラグ
   const isBackNavRef=useRef(false);
+  // 初回クラウド同期中にローカル編集したか。trueなら取得結果でローカルを上書きしない（編集消失防止）。
+  const hasLocalEditsRef=useRef(false);
 
   useEffect(()=>{
     try{
@@ -2879,7 +2881,13 @@ export default function WeightApp(){
       setAuthed(ok==="1");
       // まずローカルキャッシュを即時表示
       const raw=localStorage.getItem("af_weight_players");
-      if(raw)setPlayers((JSON.parse(raw) as any[]).map(migratePlayer));
+      if(raw){
+        const cached=(JSON.parse(raw) as any[]).map(migratePlayer);
+        setPlayers(cached);
+        // 差分保存の基準（この端末が認識するクラウド状態）をローカルキャッシュで初期化。
+        // クラウド取得に失敗しても、触っていない選手を巻き戻さないために必要。
+        cloudSeedSnapshot(cached);
+      }
       const myId=localStorage.getItem("af_my_player");
       if(myId)setMyPlayerIdState(myId);
       // キャッシュ警告：初回ログイン時のみ表示（クラウド化後は警告不要だが念のため残す）
@@ -2892,9 +2900,12 @@ export default function WeightApp(){
     if(isSupabaseEnabled){
       setCloudSyncing(true);
       cloudFetchPlayers().then(cloudData=>{
-        if(cloudData!==null&&cloudData.length>0){
+        // 同期中に手元で編集していたら、その編集を消さないよう取得結果で上書きしない
+        if(cloudData!==null&&cloudData.length>0&&!hasLocalEditsRef.current){
           const migrated=cloudData.map(migratePlayer);
           setPlayers(migrated);
+          // 差分保存の基準を最新クラウド状態で更新（以後はここからの変更分だけ書き込む）
+          cloudSeedSnapshot(migrated);
           localStorage.setItem("af_weight_players",JSON.stringify(migrated));
         }
       }).catch(console.error).finally(()=>setCloudSyncing(false));
@@ -2925,6 +2936,7 @@ export default function WeightApp(){
   },[screen]);
 
   const save=(updated:Player[])=>{
+    hasLocalEditsRef.current=true;
     setPlayers(updated);
     localStorage.setItem("af_weight_players",JSON.stringify(updated));
     // クラウドへバックグラウンド同期（デモ選手は除外）
