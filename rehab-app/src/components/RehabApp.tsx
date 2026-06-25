@@ -378,6 +378,7 @@ function ThrowingProgramBlock({
         </table>
       </div>
       <p style={{ fontSize: 12, color: MUTED, marginTop: 10 }}>※ 各ステップ最低3日間実施し、疼痛なければ次のステップへ。</p>
+      {meta?.caption && <p style={{ fontSize: 12, color: NG_TEXT, marginTop: 6 }}>{meta.caption}</p>}
     </Card>
   );
 }

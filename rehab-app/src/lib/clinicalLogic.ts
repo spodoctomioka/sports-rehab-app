@@ -44,7 +44,7 @@ export interface RehabPlan {
   /** 段階的投球プログラム：現在の推奨ステップ番号 */
   throwingCurrentStep?: number;
   /** 段階的復帰プログラムの見出し・列ラベル差し替え（未指定なら投球用デフォルト） */
-  throwingProgramMeta?: { label?: string; distanceCol?: string; repsCol?: string; noteIcon?: string };
+  throwingProgramMeta?: { label?: string; distanceCol?: string; repsCol?: string; noteIcon?: string; caption?: string };
 }
 
 export interface GeneratePlanParams {
@@ -2655,12 +2655,15 @@ const OVERHEAD_PROGRAM_SWIMMING: ThrowingStep[] = [
   { step: 5, name: "フルメニュー・レース復帰",               distance: "全種目・レースペース",     reps: "通常練習→大会",   note: "完全復帰" },
 ];
 
+// テニス/バレー/水泳のプログラムは標準的な目安（ドラフト）。誤認防止の注記を画面にも明示する。
+const OH_PROGRAM_CAPTION = "※ 本数・距離・強度は標準的な目安です。確立した単一プロトコルがないため、症状・反応や個人差に応じて医療者が調整してください。";
+
 // オーバーヘッド非投球競技のプログラム＋表示メタ（見出し・列ラベル・noteアイコン）を返す
 function getOverheadProgram(sport: SportId | ""): { steps: ThrowingStep[]; meta: NonNullable<RehabPlan["throwingProgramMeta"]> } | null {
   switch (sport) {
-    case "tennis":     return { steps: OVERHEAD_PROGRAM_TENNIS,     meta: { label: "🎾 段階的復帰プログラム（テニス）",     distanceCol: "種目/強度", repsCol: "量", noteIcon: "🎾" } };
-    case "volleyball": return { steps: OVERHEAD_PROGRAM_VOLLEYBALL, meta: { label: "🏐 段階的復帰プログラム（バレーボール）", distanceCol: "種目/強度", repsCol: "量", noteIcon: "🏐" } };
-    case "swimming":   return { steps: OVERHEAD_PROGRAM_SWIMMING,   meta: { label: "🏊 段階的復帰プログラム（水泳）",       distanceCol: "種目/距離", repsCol: "量", noteIcon: "🏊" } };
+    case "tennis":     return { steps: OVERHEAD_PROGRAM_TENNIS,     meta: { label: "🎾 段階的復帰プログラム（テニス）",     distanceCol: "種目/強度", repsCol: "量", noteIcon: "🎾", caption: OH_PROGRAM_CAPTION } };
+    case "volleyball": return { steps: OVERHEAD_PROGRAM_VOLLEYBALL, meta: { label: "🏐 段階的復帰プログラム（バレーボール）", distanceCol: "種目/強度", repsCol: "量", noteIcon: "🏐", caption: OH_PROGRAM_CAPTION } };
+    case "swimming":   return { steps: OVERHEAD_PROGRAM_SWIMMING,   meta: { label: "🏊 段階的復帰プログラム（水泳）",       distanceCol: "種目/距離", repsCol: "量", noteIcon: "🏊", caption: OH_PROGRAM_CAPTION } };
     default:           return null;
   }
 }
