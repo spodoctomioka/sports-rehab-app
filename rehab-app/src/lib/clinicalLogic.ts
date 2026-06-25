@@ -714,8 +714,11 @@ function muscleStrainPlan(p: GeneratePlanParams): RehabPlan {
   }
 
   // ④ アメリカンフットボール特化コンテンツ
+  // ※ ポジション別カードはハムストリング（大腿後面・短距離ルート/キックの離心性負荷）前提で記述されているため、
+  //   大腿四頭筋（大腿前面）損傷では誤部位・誤った生体力学になる。ハムストリング時のみ表示し、
+  //   大腿四頭筋では正しい汎用（else分岐）内容で復帰を進める。
   const isAF = p.sport === "american_football";
-  if (isAF) {
+  if (isAF && isHamstring) {
     const pos = (p.position ?? "").toUpperCase();
     const isWR = pos.includes("WR");
     const isRB = pos.includes("RB");
@@ -976,6 +979,34 @@ function muscleStrainPlan(p: GeneratePlanParams): RehabPlan {
 
     // ── Phase 6（data[5]・完全復帰）：Lv.6 ──
     data[5].okList.push("練習参加レベル：Lv.6 ゲーム出場可");
+  }
+
+  // ④-2 アメフト × 大腿四頭筋：K/P（キッカー）のキック復帰
+  // キック足の振り出し（股関節屈曲＋膝伸展）は大腿直筋（rectus femoris）に大きな負荷がかかり、
+  // キッカーの大腿四頭筋（大腿直筋）損傷の主因。段階的なキック量の再開を加える。
+  if (isAF && !isHamstring) {
+    const pos = (p.position ?? "").toUpperCase();
+    const isKP = pos.includes("K/P");
+    if (isKP) {
+      // スポーツ準備期（data[4]）：段階的キック復帰
+      data[4].rehabMenu.push({
+        title: "キック段階的復帰（本数を漸増）",
+        sets: "少数から（目安：5→10→15本）",
+        note: "スポーツ準備期からキック解禁。無痛域から段階的に",
+        details:
+          "キック足の振り出し（股関節屈曲＋膝伸展）は大腿直筋（rectus femoris）に大きな負荷がかかり、キッカーの大腿四頭筋（大腿直筋）損傷の主因です。\n\n" +
+          "【段階的な進め方】\n" +
+          "・無痛域の軽い振り出し（ボールなし／軽いボール）→ 助走なしキック → ハーフアプローチ → フルアプローチ\n" +
+          "・本数は少数から開始し、翌日に大腿前面の疼痛・張りがなければ漸増（目安：5→10→15本）\n" +
+          "・パント／プレースキックとも同様に量を管理\n\n" +
+          "【注意事項】\n" +
+          "・疼痛・張りが出た時点でその日のキックは終了。翌日の状態を確認してから再開\n" +
+          "・本数・距離は目安です。症状・反応や個人差に応じて医療者が調整してください",
+      });
+      data[4].okList.push("キックの段階的再開（無痛域→助走なし→ハーフ→フルアプローチ、本数を漸増）");
+      // 完全復帰期（data[5]）
+      data[5].okList.push("フルキック・実戦復帰（翌日の大腿前面の張り・疼痛がないことを確認しながら）");
+    }
   }
 
   // ⑤ 目標日逆算・進捗見通し
@@ -2677,6 +2708,14 @@ function throwingStepFromDays(days: number): number {
   return 5;
 }
 
+const ELBOW_THROWING_GUIDANCE =
+  "■ 投球障害肘（内側型・UCLへの外反ストレス）\n" +
+  "・最大の原因は投げ過ぎ（オーバーユース）。急性〜亜急性は投球休止と炎症コントロール、疼痛・可動域・外反ストレステストの陰性化を確認しながら段階的投球プログラム（ITP）で復帰する。\n" +
+  "・ITPは距離・球数・強度を漸増し、肘内側の負荷（外反トルク）を全力投球レベルまで段階的に構築する。長距離投や全力に近い投球ほど外反トルクが増すため、距離・強度は段階的に上げる（Dias T, et al. Biomechanical Basis of Interval Throwing Programs. Int J Sports Phys Ther 2023;18(5):1036-1053. doi:10.26603/001c.87811）。\n" +
+  "・復帰は暦ではなく負荷管理を重視。急性:慢性作業量比（ACWR）を安全域（概ね0.7〜1.3）に保ち、球数・登板間隔を管理して再受傷・setbackを防ぐ（Reinold MM, et al. An Interval Throwing Program for Baseball Pitchers Based upon Workload Data. Int J Sports Phys Ther 2024;19(3):326-336. doi:10.26603/001c.94146）。\n" +
+  "・重度（UCL完全断裂）や保存で進まない例は、UCL再建術（Tommy John）等の適応評価のため整形外科専門医へ。\n" +
+  "※ 段階的投球プログラムの具体的な距離・球数は当院プロトコル（競技別：野球＝塁間/マウンド、アメフト＝ルート）に基づく。";
+
 function elbowThrowingPlan(p: GeneratePlanParams): RehabPlan {
   const okPainFree = t(p.tests, "okPainFree");
   const okROM      = t(p.tests, "okROM");
@@ -2744,6 +2783,7 @@ function elbowThrowingPlan(p: GeneratePlanParams): RehabPlan {
           return okThrow ? last : Math.min(throwingStepFromDays(getDays(p.injuryDate)), last);
         })()
       : undefined,
+    clinicalGuidance: ELBOW_THROWING_GUIDANCE,
   };
 }
 
