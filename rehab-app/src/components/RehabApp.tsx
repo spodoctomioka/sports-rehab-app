@@ -314,13 +314,19 @@ function OttawaRuleBlock() {
 function ThrowingProgramBlock({
   steps,
   currentStep,
+  meta,
 }: {
   steps: NonNullable<RehabPlan["throwingProgram"]>;
   currentStep?: number;
+  meta?: RehabPlan["throwingProgramMeta"];
 }) {
+  const label       = meta?.label ?? "⚾ 段階的投球プログラム";
+  const distanceCol = meta?.distanceCol ?? "距離";
+  const repsCol     = meta?.repsCol ?? "球数";
+  const noteIcon    = meta?.noteIcon ?? "🏈";
   return (
     <Card>
-      <SectionLabel>⚾ 段階的投球プログラム</SectionLabel>
+      <SectionLabel>{label}</SectionLabel>
       {currentStep !== undefined && (
         <div style={{
           marginBottom: 12, padding: "8px 14px", borderRadius: 8,
@@ -334,7 +340,7 @@ function ThrowingProgramBlock({
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${BORDER}` }}>
-              {["Step", "名称", "距離", "球数"].map((h) => (
+              {["Step", "名称", distanceCol, repsCol].map((h) => (
                 <th key={h} style={{ padding: "6px 10px", textAlign: "left", color: MUTED, fontWeight: 700 }}>{h}</th>
               ))}
             </tr>
@@ -361,7 +367,7 @@ function ThrowingProgramBlock({
                   <td style={{ padding: "8px 10px", color: isCurrent ? GREEN : isDone ? MUTED2 : TEXT, fontWeight: isCurrent ? 700 : 400 }}>
                     <div>{s.name}</div>
                     {s.week && <div style={{ fontSize: 11, color: MUTED2, fontWeight: 400, marginTop: 2 }}>🗓 {s.week}</div>}
-                    {s.note && <div style={{ fontSize: 11, color: DOC_TEXT, background: DOC_BG, border: `1px solid ${DOC_BORD}`, borderRadius: 4, padding: "2px 6px", marginTop: 4, fontWeight: 400, display: "inline-block" }}>🏈 {s.note}</div>}
+                    {s.note && <div style={{ fontSize: 11, color: DOC_TEXT, background: DOC_BG, border: `1px solid ${DOC_BORD}`, borderRadius: 4, padding: "2px 6px", marginTop: 4, fontWeight: 400, display: "inline-block" }}>{noteIcon} {s.note}</div>}
                   </td>
                   <td style={{ padding: "8px 10px", color: MUTED2, whiteSpace: "nowrap" }}>{s.distance}</td>
                   <td style={{ padding: "8px 10px", color: MUTED2 }}>{s.reps}</td>
@@ -1276,6 +1282,7 @@ export default function RehabApp() {
               <ThrowingProgramBlock
                 steps={plan.throwingProgram}
                 currentStep={plan.throwingCurrentStep}
+                meta={plan.throwingProgramMeta}
               />
             )}
 

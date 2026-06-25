@@ -43,6 +43,8 @@ export interface RehabPlan {
   progressNote?: string;
   /** 段階的投球プログラム：現在の推奨ステップ番号 */
   throwingCurrentStep?: number;
+  /** 段階的復帰プログラムの見出し・列ラベル差し替え（未指定なら投球用デフォルト） */
+  throwingProgramMeta?: { label?: string; distanceCol?: string; repsCol?: string; noteIcon?: string };
 }
 
 export interface GeneratePlanParams {
@@ -2625,6 +2627,44 @@ function getThrowingProgram(sport: SportId | ""): ThrowingStep[] {
   return sport === "american_football" ? THROWING_PROGRAM_AF : THROWING_PROGRAM_BASEBALL;
 }
 
+// ===== オーバーヘッド非投球競技の段階的復帰プログラム（テニス／バレー／水泳） =====
+// ※ 確立した単一プロトコルがないため、インターバル復帰の標準構造（量→強度の順／肩負荷が最大の
+//    動作＝サーブ・スパイク・バタフライを最後に導入）に基づくドラフト。数値は臨床に合わせ調整可。
+//    distance列＝種目/強度、reps列＝量として表示（throwingProgramMetaで列見出しを差し替え）。
+const OVERHEAD_PROGRAM_TENNIS: ThrowingStep[] = [
+  { step: 1, name: "フォーム確認（ミニテニス・低強度ストローク）", distance: "フォアハンド主体（ショート）", reps: "10〜20球",        note: "サーブはまだ行わない" },
+  { step: 2, name: "グラウンドストローク（ベースライン・両面）",   distance: "フォア＋バック（中強度）",       reps: "20〜30球" },
+  { step: 3, name: "ストローク＋ボレー（動きの中で）",             distance: "ストローク＋ネットプレー",       reps: "30〜50球",        note: "サーブは1/2強度から少数のみ" },
+  { step: 4, name: "サーブ導入（1/2→3/4強度）",                   distance: "サーブ＋ストローク",             reps: "サーブ10→20→30本", note: "サーブは肩負荷が最大。段階的に強度・本数を増やす" },
+  { step: 5, name: "フルサーブ・実戦復帰",                         distance: "全ショット・フルサーブ",         reps: "練習試合→公式戦",  note: "完全復帰" },
+];
+
+const OVERHEAD_PROGRAM_VOLLEYBALL: ThrowingStep[] = [
+  { step: 1, name: "トス・セット中心（低負荷オーバーヘッド）", distance: "セット・アンダー",         reps: "10〜20回",          note: "スパイク・サーブはまだ行わない" },
+  { step: 2, name: "軽打（ダウンボール・1/2強度の打ち込み）", distance: "ダウンボール・軽打",       reps: "20〜30回" },
+  { step: 3, name: "スパイク導入（助走なし→助走あり・中強度）", distance: "スパイク（中強度）",       reps: "スパイク10→20→30本", note: "フルスイングはまだ" },
+  { step: 4, name: "フルスパイク＋サーブ（3/4→フル）",          distance: "スパイク＋サーブ",         reps: "20→30→40本",        note: "ジャンプサーブは最後に導入" },
+  { step: 5, name: "フル参加・実戦復帰",                         distance: "全プレー・ジャンプサーブ", reps: "練習→試合",          note: "完全復帰" },
+];
+
+const OVERHEAD_PROGRAM_SWIMMING: ThrowingStep[] = [
+  { step: 1, name: "低強度キック・自由形（低ヤード）",        distance: "自由形（イージー）",       reps: "200〜400m",      note: "バタフライ・全力はまだ" },
+  { step: 2, name: "ヤード増（自由形・背泳ぎ中心）",          distance: "自由形・背泳ぎ",           reps: "600〜1000m" },
+  { step: 3, name: "ストローク追加（平泳ぎ・短いバタフライ）", distance: "4泳法（低〜中強度）",      reps: "1000〜1500m",    note: "バタフライは短距離から" },
+  { step: 4, name: "強度アップ（インターバル・スプリント導入）", distance: "専門種目・スプリント",     reps: "通常練習量の50→75%" },
+  { step: 5, name: "フルメニュー・レース復帰",               distance: "全種目・レースペース",     reps: "通常練習→大会",   note: "完全復帰" },
+];
+
+// オーバーヘッド非投球競技のプログラム＋表示メタ（見出し・列ラベル・noteアイコン）を返す
+function getOverheadProgram(sport: SportId | ""): { steps: ThrowingStep[]; meta: NonNullable<RehabPlan["throwingProgramMeta"]> } | null {
+  switch (sport) {
+    case "tennis":     return { steps: OVERHEAD_PROGRAM_TENNIS,     meta: { label: "🎾 段階的復帰プログラム（テニス）",     distanceCol: "種目/強度", repsCol: "量", noteIcon: "🎾" } };
+    case "volleyball": return { steps: OVERHEAD_PROGRAM_VOLLEYBALL, meta: { label: "🏐 段階的復帰プログラム（バレーボール）", distanceCol: "種目/強度", repsCol: "量", noteIcon: "🏐" } };
+    case "swimming":   return { steps: OVERHEAD_PROGRAM_SWIMMING,   meta: { label: "🏊 段階的復帰プログラム（水泳）",       distanceCol: "種目/距離", repsCol: "量", noteIcon: "🏊" } };
+    default:           return null;
+  }
+}
+
 // 受傷（または投球開始）からの経過日数を docx の日数バンドに当てて現在ステップを推定
 function throwingStepFromDays(days: number): number {
   if (days <= 7)  return 1;
@@ -2714,6 +2754,14 @@ function rotatorCuffPlan(p: GeneratePlanParams): RehabPlan {
   const td = getTargetDays(p.targetDate);
   // 投球プログラムが用意されている競技（野球＝塁間/マウンド・アメフト＝ルート）。
   const isThrowingSport = p.sport === "baseball" || p.sport === "american_football";
+  // オーバーヘッド非投球競技（テニス／バレー／水泳）は専用の段階的復帰プログラムを表示。
+  const overhead = getOverheadProgram(p.sport); // null=投球競技 or 非OH競技
+  const isOverheadSport = isThrowingSport || overhead !== null;
+  // 段階的復帰期に表示するプログラム＋表示メタ（投球競技は投球プログラム＝デフォルトメタ）。
+  const overheadProgram = isThrowingSport ? getThrowingProgram(p.sport) : (overhead?.steps ?? []);
+  const overheadMeta = isThrowingSport ? undefined : overhead?.meta;
+  // 復帰課程の呼称（投球競技＝野球肘と同じ投球プログラム／他OH＝サーブ・スパイク等の段階的復帰）。
+  const ohProgramWord = isThrowingSport ? "段階的投球プログラム（野球肘と同じ）" : "段階的な競技復帰プログラム（サーブ・スパイク・スイム等）";
 
   const okPainFree = t(p.tests, "okPainFree");
   const okROM      = t(p.tests, "okROM");
@@ -2772,24 +2820,26 @@ function rotatorCuffPlan(p: GeneratePlanParams): RehabPlan {
       ],
       timeline: [
         { week: "現在：腱板筋力・機能回復期", goal: "腱板テスト全合格＆筋力", activity: "腱板・肩甲帯強化・プライオ" },
-        { week: "→ 腱板テスト合格で",         goal: "段階的復帰",           activity: isThrowingSport ? "段階的投球プログラム" : "個人→対人→試合形式" },
+        { week: "→ 腱板テスト合格で",         goal: "段階的復帰",           activity: isOverheadSport ? "段階的復帰プログラム" : "個人→対人→試合形式" },
         { week: "→ 段階的復帰クリアで",       goal: "競技復帰",             activity: "段階的にフル参加→試合" },
       ],
       alert: "腱板の各誘発テストが無痛・陰性で、ROMフル・圧痛なしが揃ってから段階的復帰へ進みます。評価は医療者のもとで行ってください。",
     },
     {
-      summary: isThrowingSport
-        ? "腱板テスト合格・ROMフル・圧痛なしを確認。段階的復帰期です。野球肘と同じ段階的投球プログラム（下記）に沿って距離・強度を段階的に上げます。投球後の疼痛・翌日の状態を確認しながら進め、1段階ごとに問題なければ次へ。"
+      summary: isOverheadSport
+        ? `腱板テスト合格・ROMフル・圧痛なしを確認。段階的復帰期です。${ohProgramWord}（下記）に沿って、量→強度の順で段階的に上げます。各段階で実施後の疼痛・翌日の状態を確認し、問題なければ次へ。評価は医療者のもとで。`
         : "腱板テスト合格・ROMフル・圧痛なしを確認。段階的復帰期です。個人練習（競技動作の単独反復）→ 対人（パス・ラリー・軽い実戦）→ 試合形式へ、各段階で疼痛・不安なくクリアしながら段階的に復帰します。評価は医療者のもとで。",
-      okList: isThrowingSport
-        ? ["段階的投球プログラム（下のプログラム参照）", "投球後のアイシング・肩甲骨ケア", "腱板・肩甲帯筋力の維持", "投球数・強度の管理（急増を避ける）"]
+      okList: isOverheadSport
+        ? ["下記の段階的復帰プログラムに沿って進める", "実施後のアイシング・肩甲骨ケア", "腱板・肩甲帯筋力の維持", "量・強度の管理（急増を避ける）"]
         : ["個人練習（競技動作の単独反復）から開始", "問題なければ対人練習（パス・ラリー・軽い実戦）へ", "次いで試合形式へ段階的に", "各段階で疼痛・不安・翌日の状態を確認"],
       ngList: ["痛みを我慢した競技動作の継続", "段階を飛ばして一気に全強度へ戻すこと", "翌日に疼痛・夜間痛が出る負荷", "違和感・脱力がある状態での無理な実戦"],
-      rehabMenu: isThrowingSport
+      rehabMenu: isOverheadSport
         ? [
-            { title: "段階的投球プログラム", sets: "下記プログラム参照", note: "距離・強度を段階的に。投球後の症状を確認", details: "野球肘と同じ段階的投球プログラム（競技別：野球＝塁間・マウンド／アメフト＝ルート）に沿って、距離・球数・強度を段階的に上げます。各ステップで投球後の疼痛・翌日の状態を確認し、問題があれば1段階戻します。" },
-            { title: "腱板・肩甲帯筋力の維持", sets: "15回 × 3", note: "外旋・内旋・前鋸筋・ローイング", details: "投球再開後も腱板・肩甲帯の強化を継続し、疲労による機能低下を防ぎます。" },
-            { title: "投球後ケア・負荷管理", sets: "毎回", note: "アイシング・肩甲骨ケア・球数管理", details: "投球後のアイシングと肩甲骨ケアをルーティン化し、肩特異的RPEで週単位の負荷をモニタリングして急増を避けます。" },
+            { title: ohProgramWord, sets: "下記プログラム参照", note: "量→強度の順。実施後の症状を確認", details: isThrowingSport
+                ? "野球肘と同じ段階的投球プログラム（競技別：野球＝塁間・マウンド／アメフト＝ルート）に沿って、距離・球数・強度を段階的に上げます。各ステップで投球後の疼痛・翌日の状態を確認し、問題があれば1段階戻します。"
+                : "下記の段階的復帰プログラムに沿って、まず量（回数・距離）を、次に強度を段階的に上げます。肩への負荷が最大の動作（サーブ・スパイク・バタフライ）は最後に導入します。各ステップで実施後の疼痛・翌日の状態を確認し、問題があれば1段階戻します。" },
+            { title: "腱板・肩甲帯筋力の維持", sets: "15回 × 3", note: "外旋・内旋・前鋸筋・ローイング", details: "競技動作の再開後も腱板・肩甲帯の強化を継続し、疲労による機能低下を防ぎます。" },
+            { title: "実施後ケア・負荷管理", sets: "毎回", note: "アイシング・肩甲骨ケア・量/強度管理", details: "実施後のアイシングと肩甲骨ケアをルーティン化し、肩特異的RPE（修正Borg）で週単位の負荷をモニタリングして急増を避けます。" },
           ]
         : [
             { title: "個人練習（単独反復）", sets: "段階的", note: "競技動作を単独で・低強度から", details: "競技で必要な動作（スイング・サーブ・シュート等）を、対人なしで低強度から反復します。痛み・不安なく行えれば次の対人へ進みます。" },
@@ -2797,7 +2847,7 @@ function rotatorCuffPlan(p: GeneratePlanParams): RehabPlan {
             { title: "試合形式へ", sets: "段階的", note: "実戦に近い強度→フル参加", details: "試合形式の練習に段階的に参加し、フル強度・実戦に近い負荷で問題がないことを確認してから競技復帰します。各段階で翌日の状態を確認します。" },
           ],
       timeline: [
-        { week: "現在：段階的復帰期", goal: isThrowingSport ? "段階的投球プログラム完了" : "個人→対人→試合をクリア", activity: isThrowingSport ? "距離・強度の段階的アップ" : "個人練習→対人→試合形式" },
+        { week: "現在：段階的復帰期", goal: isOverheadSport ? "段階的復帰プログラム完了" : "個人→対人→試合をクリア", activity: isOverheadSport ? "量→強度の段階的アップ" : "個人練習→対人→試合形式" },
         { week: "→ 復帰課題クリアで", goal: "競技復帰", activity: "段階的にフル参加→試合" },
       ],
       alert: "段階を飛ばさず、各段階で疼痛・不安・翌日の状態を確認しながら進めます。痛みを我慢した継続は再燃・増悪の原因になります。",
@@ -2827,7 +2877,7 @@ function rotatorCuffPlan(p: GeneratePlanParams): RehabPlan {
     "・手術 vs 保存のメタ解析でも多くの患者報告アウトカムで明確な差は示されていない（Ryösä A, et al. Disabil Rehabil 2017;39(14):1357-1363. doi:10.1080/09638288.2016.1198431）。各種診療ガイドラインでも保存治療が初期管理の中心（Lowry V, et al. Arch Phys Med Rehabil 2024;105(2):411-426. doi:10.1016/j.apmr.2023.09.022）。\n" +
     "・保存の具体的進め方（疼痛コントロール→ROM→腱板/肩甲帯の段階的強化）：Dickinson RN, Kuhn JE. Phys Med Rehabil Clin N Am 2023;34(2):335-355. doi:10.1016/j.pmr.2022.12.002。部分層断裂の評価・管理：Bi AS, et al. JBJS Rev 2024;12(8). doi:10.2106/JBJS.RVW.24.00063。\n" +
     "■ 進め方（機能ベース・臨床基準）\n" +
-    "・安静時/夜間痛・圧痛の消失 → ROMフル（左右差なし・無痛）→ 全腱板テスト合格＆筋力 → 【オーバーヘッド競技】野球肘と同じ段階的投球プログラム／【その他】個人練習→対人→試合形式 → 競技復帰。暦ではなく機能基準で進める（評価は医療者のもとで）。\n" +
+    "・安静時/夜間痛・圧痛の消失 → ROMフル（左右差なし・無痛）→ 全腱板テスト合格＆筋力 → 【オーバーヘッド競技】段階的な競技復帰プログラム（野球/アメフト＝投球、テニス/バレー/水泳＝サーブ・スパイク・スイムの段階的負荷／いずれも量→強度の順、肩負荷が最大の動作は最後に）／【その他】個人練習→対人→試合形式 → 競技復帰。暦ではなく機能基準で進める（評価は医療者のもとで）。\n" +
     "※ 外傷性の若年・全層断裂など一部は手術適応のことがあり、保存で改善しない場合は専門医評価を。";
 
   return {
@@ -2841,12 +2891,13 @@ function rotatorCuffPlan(p: GeneratePlanParams): RehabPlan {
     timeline: td ? [...data[idx].timeline, { week: "目標日", goal: "大会・試合", activity: `${td}日後` }] : data[idx].timeline,
     alert: data[idx].alert,
     phaseTracker: ROTATOR_CUFF_PHASES,
-    clinicalGuidance: ROTATOR_CUFF_GUIDANCE + (isThrowingSport ? "\n\n" + SHOULDER_RTS_GUIDANCE : ""),
-    // オーバーヘッド（投球）競技は段階的復帰期から投球プログラムを表示（野球肘と同じ競技別プログラム）。
-    throwingProgram: (isThrowingSport && idx >= 3) ? getThrowingProgram(p.sport) : undefined,
-    throwingCurrentStep: (isThrowingSport && idx >= 3)
-      ? (() => { const last = getThrowingProgram(p.sport).length; return idx >= 4 ? last : 1; })()
+    clinicalGuidance: ROTATOR_CUFF_GUIDANCE + (isOverheadSport ? "\n\n" + SHOULDER_RTS_GUIDANCE : ""),
+    // オーバーヘッド競技は段階的復帰期からプログラムを表示（野球/アメフト＝投球／テニス・バレー・水泳＝専用）。
+    throwingProgram: (isOverheadSport && idx >= 3) ? overheadProgram : undefined,
+    throwingCurrentStep: (isOverheadSport && idx >= 3)
+      ? (() => { const last = overheadProgram.length; return idx >= 4 ? last : 1; })()
       : undefined,
+    throwingProgramMeta: (isOverheadSport && idx >= 3) ? overheadMeta : undefined,
   };
 }
 
