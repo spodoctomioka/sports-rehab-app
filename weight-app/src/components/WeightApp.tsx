@@ -1578,8 +1578,8 @@ function PlayerDetailScreen({player,players,onBack,onEdit,onUpdate,isCoach,fromC
       </div>
       );})()}
 
-      {/* マイページ設定バナー（初回のみ） */}
-      {showMyPageBanner&&onSetMyPlayer&&(
+      {/* マイページ設定バナー（初回のみ・コーチ画面経由では非表示） */}
+      {showMyPageBanner&&onSetMyPlayer&&!fromCoach&&(
         <div style={{background:MAROON,borderRadius:14,padding:"14px 16px",display:"flex",alignItems:"center",gap:12}}>
           <span style={{fontSize:24,flexShrink:0}}>⭐</span>
           <div style={{flex:1}}>
@@ -1593,7 +1593,8 @@ function PlayerDetailScreen({player,players,onBack,onEdit,onUpdate,isCoach,fromC
         </div>
       )}
 
-      {/* 体重入力（モバイル最優先・最上部） */}
+      {/* 体重入力（モバイル最優先・最上部・コーチ画面経由では非表示） */}
+      {!fromCoach&&(
       <Card style={{border:`2px solid ${isThursday()?MAROON:GOLD}`,background:isThursday()?MAROON_L:GOLD_L}}>
         <Label>{isThursday()?"📅 今日は計測日（木曜日）！":"⚖️ 体重を記録"}</Label>
         {saved&&<div style={{background:OK_BG,border:`1px solid ${OK_BRD}`,borderRadius:8,padding:"10px 14px",fontSize:14,color:GREEN,fontWeight:700,marginBottom:12}}>✓ 記録しました！</div>}
@@ -1631,6 +1632,7 @@ function PlayerDetailScreen({player,players,onBack,onEdit,onUpdate,isCoach,fromC
           🏈 部活のある日は練習後に・部活がない日は家で記録しよう
         </div>
       </Card>
+      )}
 
       {/* ステータス */}
       <Card>
@@ -1696,11 +1698,13 @@ function PlayerDetailScreen({player,players,onBack,onEdit,onUpdate,isCoach,fromC
         })()}
       </Card>
 
-      {/* やる気メッセージ */}
+      {/* やる気メッセージ（コーチ画面経由では非表示） */}
+      {!fromCoach&&(
       <div style={{background:mot.color+"18",border:`1.5px solid ${mot.color}44`,borderRadius:12,padding:"14px 18px",display:"flex",alignItems:"center",gap:12}}>
         <span style={{fontSize:26,flexShrink:0}}>{mot.emoji}</span>
         <span style={{fontSize:14,fontWeight:600,color:mot.color,lineHeight:1.6}}>{mot.msg}</span>
       </div>
+      )}
 
       {/* スタッフ相談アラート */}
       {consultAlert&&(consultAlert.type==="goal_cleared"?(
@@ -1903,7 +1907,8 @@ function PlayerDetailScreen({player,players,onBack,onEdit,onUpdate,isCoach,fromC
         </Card>
       )}
 
-      {/* カロリーガイド + 食事レコメンド（下に移動） */}
+      {/* カロリーガイド + 食事レコメンド（下に移動・コーチ画面経由では非表示） */}
+      {!fromCoach&&(
       <Card>
         <Label>{goal.goalType==="recomp"?"1日の維持カロリー目安（MET基準）":"1日の目安カロリー（MET基準）"}</Label>
         <div style={{display:"flex",gap:10,flexWrap:"wrap",marginBottom:12}}>
@@ -1932,6 +1937,7 @@ function PlayerDetailScreen({player,players,onBack,onEdit,onUpdate,isCoach,fromC
           <FoodRecommendation practiceKcal={kcal.practiceDay} offKcal={kcal.offDay} weight={cw}/>
         )}
       </Card>
+      )}
 
       {/* コーチ専用：チーム割り当て（コーチダッシュボードからのみ表示） */}
       {isCoach&&fromCoach&&(
@@ -1962,8 +1968,8 @@ function PlayerDetailScreen({player,players,onBack,onEdit,onUpdate,isCoach,fromC
         </Card>
       )}
 
-      {/* コーチ専用：目標タイプ設定 */}
-      {isCoach&&(
+      {/* コーチ専用：目標タイプ設定（コーチ画面経由のときのみアクセス可） */}
+      {isCoach&&fromCoach&&(
         <Card style={{border:`2px solid ${MAROON}44`}}>
           <Label>🎯 目標タイプ設定（コーチ専用）</Label>
           <div style={{display:"flex",gap:8,marginBottom:(player.goalType==="cut"||(player.goalType??"bulk")==="bulk")?12:0}}>
