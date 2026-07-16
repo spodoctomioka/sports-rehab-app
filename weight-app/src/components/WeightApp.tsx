@@ -1402,7 +1402,7 @@ function PlayerListScreen({players,onSelect,onNew,onBack,myPlayerId}:{players:Pl
         ?<Card><div style={{textAlign:"center",color:MUTED,fontSize:14,padding:"20px 0"}}>まだ選手が登録されていません</div></Card>
         :sorted.map(p=>{
           const cw=latestWeight(p);
-          const lastWeekW=p.measurements.find(m=>m.date===lastWeekThursdayStr())?.weight??prevWeight(p);
+          const lastWeekW=p.measurements.find(m=>m.date===lastWeekThursdayStr())?.weight??null;
           const isMe=p.id===myPlayerId;
           const grade=calcGrade(p.birthDate);
           const teamNum=p.team??0;
@@ -1443,7 +1443,7 @@ function PlayerListScreen({players,onSelect,onNew,onBack,myPlayerId}:{players:Pl
               </div>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
                 <div style={{textAlign:"right"}}>
-                  <div style={{fontSize:10,color:MUTED,lineHeight:1.4}}>先週 {lastWeekW!==null?`${lastWeekW}kg`:"—"}</div>
+                  <div style={{fontSize:10,color:MUTED,lineHeight:1.4}}>先週 {lastWeekW!==null?`${lastWeekW}kg`:"未入力"}</div>
                   <div style={{fontSize:14,fontWeight:800,color:TEXT,lineHeight:1.4}}>今週 {cw!==null?`${cw}kg`:"—"}</div>
                 </div>
                 <span style={{fontSize:22,color:MUTED2}}>›</span>
