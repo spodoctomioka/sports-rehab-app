@@ -1402,6 +1402,7 @@ function PlayerListScreen({players,onSelect,onNew,onBack,myPlayerId}:{players:Pl
         ?<Card><div style={{textAlign:"center",color:MUTED,fontSize:14,padding:"20px 0"}}>まだ選手が登録されていません</div></Card>
         :sorted.map(p=>{
           const cw=latestWeight(p);
+          const lastWeekW=p.measurements.find(m=>m.date===lastWeekThursdayStr())?.weight??prevWeight(p);
           const isMe=p.id===myPlayerId;
           const grade=calcGrade(p.birthDate);
           const teamNum=p.team??0;
@@ -1438,10 +1439,13 @@ function PlayerListScreen({players,onSelect,onNew,onBack,myPlayerId}:{players:Pl
                 <div style={{fontSize:12,marginTop:3}}>
                   <span style={{color:MUTED,fontWeight:700}}>{p.position[0]||"未設定"}</span>
                   {p.position.slice(1).map(sp=><span key={sp} style={{color:MUTED2}}>{"・"+sp}</span>)}
-                  <span style={{color:MUTED}}> ／ {cw!==null?`${cw} kg`:"未計測"}</span>
                 </div>
               </div>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
+                <div style={{textAlign:"right"}}>
+                  <div style={{fontSize:10,color:MUTED,lineHeight:1.4}}>先週 {lastWeekW!==null?`${lastWeekW}kg`:"—"}</div>
+                  <div style={{fontSize:14,fontWeight:800,color:TEXT,lineHeight:1.4}}>今週 {cw!==null?`${cw}kg`:"—"}</div>
+                </div>
                 <span style={{fontSize:22,color:MUTED2}}>›</span>
               </div>
             </button>
@@ -2235,12 +2239,12 @@ function ManagerBulkScreen({players,onSave,onBack}:{players:Player[];onSave:(u:P
       ))}
       {isThursday()&&savedCount===null&&<div style={{background:WN_BG,border:`1px solid ${WN_BRD}`,borderRadius:10,padding:"12px 16px",fontSize:14,color:"#7a5000",fontWeight:700}}>📅 今日は計測日（木曜日）です！</div>}
       {roster.length===0?<Card><div style={{textAlign:"center",color:MUTED,fontSize:14,padding:"20px 0"}}>選手が登録されていません</div></Card>:(
-        <Card style={{padding:"14px 16px"}}>
-          <div style={{display:"flex",gap:8,fontSize:11,color:MUTED,fontWeight:700,paddingBottom:8,borderBottom:`1px solid ${BORDER}`,marginBottom:8}}>
-            <div style={{flex:2}}>名前</div>
-            <div style={{width:52}}>POS</div>
-            <div style={{width:56,textAlign:"right"}}>先週</div>
-            <div style={{width:108}}>今週の体重</div>
+        <Card style={{padding:"14px 12px"}}>
+          <div style={{display:"flex",gap:6,fontSize:11,color:MUTED,fontWeight:700,paddingBottom:8,borderBottom:`1px solid ${BORDER}`,marginBottom:8}}>
+            <div style={{flex:1,minWidth:0}}>名前</div>
+            <div style={{width:38}}>POS</div>
+            <div style={{width:42,textAlign:"right"}}>先週</div>
+            <div style={{width:92}}>今週の体重</div>
           </div>
           <div style={{display:"flex",flexDirection:"column",gap:12}}>
             {sorted.map(p=>{
@@ -2289,18 +2293,18 @@ function ManagerBulkScreen({players,onSave,onBack}:{players:Player[];onSave:(u:P
                     <div style={{height:1,flex:1,background:thuUnmeasuredRow?"#FED7AA":BORDER}}/>
                   </div>
                 )}
-                <div style={{display:"flex",alignItems:"center",gap:8,borderRadius:8,padding:"4px 6px",background:rowBg,borderLeft:`3px solid ${rowBorderColor}`}}>
-                  <div style={{flex:2,fontSize:14,fontWeight:600,color:TEXT,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",display:"flex",alignItems:"center",gap:4}}>
+                <div style={{display:"flex",alignItems:"center",gap:6,borderRadius:8,padding:"4px 6px",background:rowBg,borderLeft:`3px solid ${rowBorderColor}`}}>
+                  <div style={{flex:1,minWidth:0,fontSize:14,fontWeight:600,color:TEXT,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis",display:"flex",alignItems:"center",gap:4}}>
                     {thuUnmeasuredRow&&<span style={{fontSize:10,background:"#F97316",color:"#fff",borderRadius:4,padding:"1px 4px",fontWeight:800,flexShrink:0}}>未</span>}
                     {p.name}
                   </div>
-                  <div style={{width:52,fontSize:11,color:MUTED,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{p.position[0]||"—"}{p.position.length>1&&<span style={{color:MUTED2}}>+{p.position.length-1}</span>}</div>
-                  <div style={{width:56,textAlign:"right"}}>
+                  <div style={{width:38,flexShrink:0,fontSize:11,color:MUTED,overflow:"hidden",whiteSpace:"nowrap",textOverflow:"ellipsis"}}>{p.position[0]||"—"}{p.position.length>1&&<span style={{color:MUTED2}}>+{p.position.length-1}</span>}</div>
+                  <div style={{width:42,flexShrink:0,textAlign:"right"}}>
                     <div style={{fontSize:13,color:MUTED2,fontWeight:600}}>{lastWeekW!==null?`${lastWeekW}`:"—"}</div>
                     {diff!==null&&<div style={{fontSize:10,fontWeight:700,color:diff>0?GREEN:diff<0?RED:MUTED2}}>{diff>0?`▲+${diff}`:diff<0?`▼${diff}`:"±0"}</div>}
                   </div>
-                  <div style={{width:108,display:"flex",alignItems:"center",gap:4}}>
-                    <input type="number" inputMode="decimal" value={weights[p.id]??""} placeholder={lw!==null?String(lw):"体重"} onChange={e=>{setW({...weights,[p.id]:e.target.value});setSC(null);}} style={{width:76,padding:"10px 8px",borderRadius:8,fontSize:16,border:`1.5px solid ${f?MAROON:BORDER}`,outline:"none",fontFamily:"inherit",background:f?MAROON_L:"#f8f5ef",color:TEXT,boxSizing:"border-box" as const}}/>
+                  <div style={{width:92,flexShrink:0,display:"flex",alignItems:"center",gap:4}}>
+                    <input type="number" inputMode="decimal" value={weights[p.id]??""} placeholder={lw!==null?String(lw):"体重"} onChange={e=>{setW({...weights,[p.id]:e.target.value});setSC(null);}} style={{width:64,padding:"10px 6px",borderRadius:8,fontSize:15,border:`1.5px solid ${f?MAROON:BORDER}`,outline:"none",fontFamily:"inherit",background:f?MAROON_L:"#f8f5ef",color:TEXT,boxSizing:"border-box" as const}}/>
                     <span style={{fontSize:11,color:MUTED}}>kg</span>
                   </div>
                 </div>
