@@ -1401,7 +1401,7 @@ function PlayerListScreen({players,onSelect,onNew,onBack,myPlayerId}:{players:Pl
       {players.length===0
         ?<Card><div style={{textAlign:"center",color:MUTED,fontSize:14,padding:"20px 0"}}>まだ選手が登録されていません</div></Card>
         :sorted.map(p=>{
-          const cw=latestWeight(p);const g=calcGoalInfo(p,cw??0);const sl=statusStyle(calcStatus(p,g));
+          const cw=latestWeight(p);
           const isMe=p.id===myPlayerId;
           const grade=calcGrade(p.birthDate);
           const teamNum=p.team??0;
@@ -1442,7 +1442,6 @@ function PlayerListScreen({players,onSelect,onNew,onBack,myPlayerId}:{players:Pl
                 </div>
               </div>
               <div style={{display:"flex",alignItems:"center",gap:10}}>
-                <span style={{background:sl.bg,border:`1px solid ${sl.brd}`,borderRadius:6,padding:"3px 8px",fontSize:11,fontWeight:700,color:sl.color}}>{sl.text}</span>
                 <span style={{fontSize:22,color:MUTED2}}>›</span>
               </div>
             </button>
@@ -1639,8 +1638,22 @@ function PlayerDetailScreen({player,players,onBack,onEdit,onUpdate,isCoach,fromC
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
           <div>
             <Label>現在の体重</Label>
-            <div style={{fontSize:40,fontWeight:900,color:TEXT,lineHeight:1}}>{displayCw>0?displayCw:"—"}<span style={{fontSize:18,color:MUTED,marginLeft:4}}>kg</span></div>
-            {pw!==null&&displayCw>0&&<div style={{fontSize:13,color:displayCw>=pw?GREEN:RED,marginTop:4,fontWeight:700}}>{displayCw>=pw?"▲":"▼"} {Math.abs(Math.round((displayCw-pw)*10)/10)} kg（前回比）</div>}
+            {pw!==null&&displayCw>0?(
+              <div style={{display:"flex",alignItems:"flex-end",gap:10}}>
+                <div>
+                  <div style={{fontSize:11,color:MUTED,marginBottom:2}}>前回</div>
+                  <div style={{fontSize:20,fontWeight:700,color:MUTED2,lineHeight:1}}>{pw}<span style={{fontSize:11,marginLeft:2}}>kg</span></div>
+                </div>
+                <div style={{fontSize:20,color:MUTED2,paddingBottom:2}}>→</div>
+                <div>
+                  <div style={{fontSize:11,color:MUTED,marginBottom:2}}>今回</div>
+                  <div style={{fontSize:40,fontWeight:900,color:TEXT,lineHeight:1}}>{displayCw}<span style={{fontSize:18,color:MUTED,marginLeft:4}}>kg</span></div>
+                </div>
+              </div>
+            ):(
+              <div style={{fontSize:40,fontWeight:900,color:TEXT,lineHeight:1}}>{displayCw>0?displayCw:"—"}<span style={{fontSize:18,color:MUTED,marginLeft:4}}>kg</span></div>
+            )}
+            {pw!==null&&displayCw>0&&<div style={{fontSize:13,color:displayCw>=pw?GREEN:RED,marginTop:6,fontWeight:700}}>{displayCw>=pw?"▲":"▼"} {Math.abs(Math.round((displayCw-pw)*10)/10)} kg（前回比）</div>}
           </div>
           <div style={{background:sl.bg,border:`1px solid ${sl.brd}`,borderRadius:10,padding:"10px 16px",fontSize:14,fontWeight:700,color:sl.color}}>{sl.text}</div>
         </div>
@@ -2851,6 +2864,12 @@ function HomeScreen({onPlayer,onManager,onCoach,onDemo,onGuide,showDemo,myPlayer
           🎮 デモデータ（30人）を読み込む
         </button>
       )}
+      {/* 体重アップガイド（Notion） */}
+      <a href="https://rumbling-kiss-534.notion.site/Weight-up-a278340a49c44a2784f6a98d0146e81b?source=copy_link" target="_blank" rel="noopener noreferrer"
+        style={{minHeight:52,borderRadius:12,background:"transparent",border:`1.5px solid ${GOLD}`,fontSize:14,color:"#8B5A00",fontWeight:700,cursor:"pointer",fontFamily:"inherit",display:"flex",alignItems:"center",justifyContent:"center",gap:8,textDecoration:"none"}}>
+        <span style={{fontSize:20}}>📈</span>
+        <span>体重アップガイド（Notion）</span>
+      </a>
       <div style={{fontSize:11,color:MUTED2,textAlign:"center"}}>NISHI OWLS © 2026</div>
     </div>
   );
