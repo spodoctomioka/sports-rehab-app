@@ -789,9 +789,7 @@ const MOTIVATION_MSGS={
 };
 function getMotivation(p:Player,goal:GoalInfo,status:TrafficLight):{emoji:string;msg:string;color:string}{
   const cw=latestWeight(p)??0;
-  if(cw===0)return{emoji:"📋",msg:"まず今日の体重を記録しよう",color:MUTED};
-  if(goal.finalSeason)return{emoji:"🔥",msg:"最終大会期間！ここまで積み上げてきた体で戦い切ろう",color:FINAL_SEASON_STYLE.color};
-  if(goal.goalType==="recomp"){
+  if(cw===0)return{emoji:"📋",msg:"まず今日の体重を記録しよう",color:MUTED};  if(goal.goalType==="recomp"){
     const msgs=MOTIVATION_MSGS.recomp;
     return{emoji:"🔄",msg:msgs[p.measurements.length%msgs.length],color:"#2563EB"};
   }
@@ -1671,7 +1669,8 @@ function PlayerDetailScreen({player,players,onBack,onEdit,onUpdate,isCoach,fromC
             )}
             {pw!==null&&displayCw>0&&<div style={{fontSize:13,color:displayCw>=pw?GREEN:RED,marginTop:6,fontWeight:700}}>{displayCw>=pw?"▲":"▼"} {Math.abs(Math.round((displayCw-pw)*10)/10)} kg（前回比）</div>}
           </div>
-          <div style={{background:sl.bg,border:`1px solid ${sl.brd}`,borderRadius:10,padding:"10px 16px",fontSize:14,fontWeight:700,color:sl.color}}>{sl.text}</div>
+          {/* 最終大会期間は下の目標体重カードで伝えるため、ここでは出さない */}
+          {!goal.finalSeason&&<div style={{background:sl.bg,border:`1px solid ${sl.brd}`,borderRadius:10,padding:"10px 16px",fontSize:14,fontWeight:700,color:sl.color}}>{sl.text}</div>}
         </div>
         {/* ステータス詳細（折りたたみ） */}
         <button onClick={()=>setShowStatusDetail(o=>!o)} style={{marginTop:10,width:"100%",padding:"8px 12px",borderRadius:8,background:"transparent",border:`1px solid ${BORDER}`,color:MUTED,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -1732,8 +1731,8 @@ function PlayerDetailScreen({player,players,onBack,onEdit,onUpdate,isCoach,fromC
         })()}
       </Card>
 
-      {/* やる気メッセージ（コーチ画面経由では非表示） */}
-      {!fromCoach&&(
+      {/* やる気メッセージ（コーチ画面経由・最終大会期間では非表示） */}
+      {!fromCoach&&!goal.finalSeason&&(
       <div style={{background:mot.color+"18",border:`1.5px solid ${mot.color}44`,borderRadius:12,padding:"14px 18px",display:"flex",alignItems:"center",gap:12}}>
         <span style={{fontSize:26,flexShrink:0}}>{mot.emoji}</span>
         <span style={{fontSize:14,fontWeight:600,color:mot.color,lineHeight:1.6}}>{mot.msg}</span>
