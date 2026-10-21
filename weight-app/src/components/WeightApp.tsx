@@ -193,6 +193,8 @@ interface Player{
   goalBulkTarget?:number;  // 増量目標体重（bulk時にコーチが手動設定）
   goalCutTarget?:number;   // 減量目標体重（cut時のみ使用）
   team?:number;            // チーム番号 1〜5（コンペティション用）
+  archivedAt?:string;      // 引退アーカイブ日（YYYY-MM-DD）。記録は残し、通常画面から外す
+  gradYear?:number;        // 卒業年（その年の3月卒）。統計用に保存時点で確定させる
 }
 // ---- Team Colors ----
 const TEAM_COLORS:{[k:number]:{color:string;bg:string;border:string}}={
@@ -271,6 +273,32 @@ const isThursdayUnmeasured=(p:Player):boolean=>
   !p.measurements.some(m=>m.date===lastThursdayStr());
 // テスト用ダミー選手（マネージャー一括登録・お祝い集計から除外）
 const isTestPlayer=(p:Player):boolean=>p.name.replace(/[\s　]/g,"").startsWith("テスト");
+const isArchived=(p:Player):boolean=>!!p.archivedAt;
+// 卒業年：3年生ならその学年度の翌3月
+function calcGradYear(p:Player):number{
+  const t=new Date();
+  const academicYear=t.getMonth()>=3?t.getFullYear():t.getFullYear()-1;
+  return academicYear+(3-calcGrade(p.birthDate))+1;
+}
+// 統計用CSV（1行＝1回の計測）。Excelで文字化けしないようBOM付き
+function downloadWeightCsv(players:Player[]){
+  const esc=(v:string|number|undefined|null)=>{const s=v===undefined||v===null?"":String(v);return /[",\n]/.test(s)?`"${s.replace(/"/g,'""')}"`:s;};
+  const header=["選手ID","名前","状態","卒業年","学年(現役)","メインポジション","全ポジション","チーム","身長cm","生年月日","計測日","体重kg"];
+  const rows:string[]=[header.join(",")];
+  for(const p of players){
+    if(isTestPlayer(p))continue;
+    const archived=isArchived(p);
+    const base=[p.id,p.name,archived?"引退":"現役",p.gradYear??calcGradYear(p),archived?"":calcGrade(p.birthDate),p.position[0]??"",p.position.join("/"),p.team??"",p.height,p.birthDate];
+    const ms=[...p.measurements].sort((a,b)=>a.date.localeCompare(b.date));
+    if(ms.length===0)rows.push([...base,"",""].map(esc).join(","));
+    for(const m of ms)rows.push([...base,m.date,m.weight].map(esc).join(","));
+  }
+  const blob=new Blob(["﻿"+rows.join("\r\n")],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");a.href=url;a.download=`owls_weight_${todayStr()}.csv`;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
 const posLabel=(p:string[])=>p.length>0?p.join(" / "):"未設定";
 function calcAge(bd:string){
   const t=new Date(),b=new Date(bd);
@@ -1381,8 +1409,10 @@ function PlayerFormScreen({title,init,showWeight,onSave,onBack}:{
 function PlayerListScreen({players,onSelect,onNew,onBack,myPlayerId}:{players:Player[];onSelect:(p:Player)=>void;onNew:()=>void;onBack:()=>void;myPlayerId?:string;}){
   const[sortMode,setSortMode]=useState<"grade"|"team">("grade");
   const myPlayer=myPlayerId?players.find(p=>p.id===myPlayerId):null;
-  const hasTeams=players.some(p=>p.team);
-  const baseList=sortMode==="team"?sortByTeamAndGrade(players):sortByGrade(players);
+  // 引退（アーカイブ）選手は一覧に出さない（マイページ設定中の本人は先頭に残す）
+  const activePlayers=players.filter(p=>!isArchived(p));
+  const hasTeams=activePlayers.some(p=>p.team);
+  const baseList=sortMode==="team"?sortByTeamAndGrade(activePlayers):sortByGrade(activePlayers);
   // マイ選手を先頭、残りをソート順
   const sorted=[...(myPlayer?[myPlayer]:[]),...baseList.filter(p=>p.id!==myPlayerId)];
   let lastGrade=-1;let lastTeam=-1;
@@ -1468,7 +1498,8 @@ function PlayerDetailScreen({player,players,onBack,onEdit,onUpdate,isCoach,fromC
   const cw=latestWeight(player)??0,pw=prevWeight(player);
   const goal=calcGoalInfo(player,cw),st=calcStatus(player,goal),sl=goal.finalSeason?FINAL_SEASON_STYLE:statusStyle(st,goal.goalType);
   const mot=getMotivation(player,goal,st);
-  const consultAlert=getStaffConsultAlert(player,goal,cw);
+  const archived=isArchived(player); // 引退アーカイブ選手：閲覧専用（記録・目標・判定は出さない）
+  const consultAlert=archived?null:getStaffConsultAlert(player,goal,cw);
   const kcal=calcDailyCalories(cw,player.height,player.birthDate,goal.monthlyNeeded);
   const[inp,setInp]=useState(""),[saved,setSaved]=useState(false);
   const[recordDate,setRecordDate]=useState(todayStr());
@@ -1606,8 +1637,8 @@ function PlayerDetailScreen({player,players,onBack,onEdit,onUpdate,isCoach,fromC
         </div>
       )}
 
-      {/* 体重入力（モバイル最優先・最上部・コーチ画面経由では非表示） */}
-      {!fromCoach&&(
+      {/* 体重入力（モバイル最優先・最上部・コーチ画面経由／引退選手では非表示） */}
+      {!fromCoach&&!archived&&(
       <Card style={{border:`2px solid ${isThursday()?MAROON:GOLD}`,background:isThursday()?MAROON_L:GOLD_L}}>
         <Label>{isThursday()?"📅 今日は計測日（木曜日）！":"⚖️ 体重を記録"}</Label>
         {saved&&<div style={{background:OK_BG,border:`1px solid ${OK_BRD}`,borderRadius:8,padding:"10px 14px",fontSize:14,color:GREEN,fontWeight:700,marginBottom:12}}>✓ 記録しました！</div>}
@@ -1670,7 +1701,7 @@ function PlayerDetailScreen({player,players,onBack,onEdit,onUpdate,isCoach,fromC
             {pw!==null&&displayCw>0&&<div style={{fontSize:13,color:displayCw>=pw?GREEN:RED,marginTop:6,fontWeight:700}}>{displayCw>=pw?"▲":"▼"} {Math.abs(Math.round((displayCw-pw)*10)/10)} kg（前回比）</div>}
           </div>
           {/* 最終大会期間は下の目標体重カードで伝えるため、ここでは出さない */}
-          {!goal.finalSeason&&<div style={{background:sl.bg,border:`1px solid ${sl.brd}`,borderRadius:10,padding:"10px 16px",fontSize:14,fontWeight:700,color:sl.color}}>{sl.text}</div>}
+          {!goal.finalSeason&&!archived&&<div style={{background:sl.bg,border:`1px solid ${sl.brd}`,borderRadius:10,padding:"10px 16px",fontSize:14,fontWeight:700,color:sl.color}}>{sl.text}</div>}
         </div>
         {/* ステータス詳細（折りたたみ） */}
         <button onClick={()=>setShowStatusDetail(o=>!o)} style={{marginTop:10,width:"100%",padding:"8px 12px",borderRadius:8,background:"transparent",border:`1px solid ${BORDER}`,color:MUTED,fontSize:12,fontWeight:600,cursor:"pointer",fontFamily:"inherit",textAlign:"left",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
@@ -1732,7 +1763,7 @@ function PlayerDetailScreen({player,players,onBack,onEdit,onUpdate,isCoach,fromC
       </Card>
 
       {/* やる気メッセージ（コーチ画面経由・最終大会期間では非表示） */}
-      {!fromCoach&&!goal.finalSeason&&(
+      {!fromCoach&&!goal.finalSeason&&!archived&&(
       <div style={{background:mot.color+"18",border:`1.5px solid ${mot.color}44`,borderRadius:12,padding:"14px 18px",display:"flex",alignItems:"center",gap:12}}>
         <span style={{fontSize:26,flexShrink:0}}>{mot.emoji}</span>
         <span style={{fontSize:14,fontWeight:600,color:mot.color,lineHeight:1.6}}>{mot.msg}</span>
@@ -1755,7 +1786,12 @@ function PlayerDetailScreen({player,players,onBack,onEdit,onUpdate,isCoach,fromC
       ))}
 
       {/* 目標（現フェーズ）。3年生の最終大会期間は目標・ペースを出さず一言だけ */}
-      {goal.finalSeason?(
+      {archived?(
+      <Card style={{background:"#F3F4F6",border:"1.5px solid #D1D5DB"}}>
+        <div style={{fontSize:16,fontWeight:900,color:"#4B5563",marginBottom:4}}>🎓 引退{player.gradYear?`（${player.gradYear}年3月卒）`:""}</div>
+        <div style={{fontSize:13,color:TEXT,lineHeight:1.7}}>この選手の記録はアーカイブとして保存されています。体重グラフと記録履歴は今まで通り見られます。</div>
+      </Card>
+      ):goal.finalSeason?(
       <Card style={{background:FINAL_SEASON_STYLE.bg,border:`1.5px solid ${FINAL_SEASON_STYLE.brd}`}}>
         <Label style={{margin:"0 0 6px"}}>🎯 目標体重</Label>
         <div style={{fontSize:18,fontWeight:900,color:FINAL_SEASON_STYLE.color,marginBottom:4}}>🔥 最終大会期間</div>
@@ -2207,7 +2243,7 @@ function ManagerBulkScreen({players,onSave,onBack}:{players:Player[];onSave:(u:P
   const today=todayStr();
   const[sortMode,setSortMode]=useState<"grade"|"team"|"thursday">("grade");
   // 表示・集計はテスト用選手を除外（保存ペイロードには温存）
-  const roster=players.filter(p=>!isTestPlayer(p));
+  const roster=players.filter(p=>!isTestPlayer(p)&&!isArchived(p));
   const hasTeams=roster.some(p=>p.team);
   const thuUnmeasuredCount=roster.filter(p=>isThursdayUnmeasured(p)).length;
   const baseSorted=sortMode==="team"?sortByTeamAndGrade(roster):sortByGrade(roster);
@@ -2390,11 +2426,28 @@ function autoAssignTeam(p:Player):number|undefined{
 }
 
 const COMPARE_MAX=8;
-function CoachScreen({players,onBack,onPlayerClick,onDelete,onBulkUpdate,compareMode,setCompareMode,compareIds,setCompareIds,onOpenCompare}:{players:Player[];onBack:()=>void;onPlayerClick:(p:Player)=>void;onDelete:(id:string)=>void;onBulkUpdate:(updated:Player[])=>void;
-  compareMode:boolean;setCompareMode:(v:boolean)=>void;compareIds:string[];setCompareIds:(ids:string[])=>void;onOpenCompare:()=>void;}){
+function CoachScreen({players,onBack,onPlayerClick,onDelete,onBulkUpdate,compareMode,setCompareMode,compareIds,setCompareIds,onOpenCompare,showArchived,setShowArchived}:{players:Player[];onBack:()=>void;onPlayerClick:(p:Player)=>void;onDelete:(id:string)=>void;onBulkUpdate:(updated:Player[])=>void;
+  compareMode:boolean;setCompareMode:(v:boolean)=>void;compareIds:string[];setCompareIds:(ids:string[])=>void;onOpenCompare:()=>void;
+  showArchived:boolean;setShowArchived:(v:boolean)=>void;}){
+  // ---- 引退アーカイブ ----
+  // 一覧に出すのは「現役」か「引退」のどちらか。保存（onBulkUpdate）には必ず players 全体を渡す
+  const activeList=players.filter(p=>!isArchived(p));
+  const archivedList=players.filter(p=>isArchived(p));
+  const viewList=showArchived?archivedList:activeList;
+  const archiveCandidates=activeList.filter(p=>!isTestPlayer(p)&&calcGrade(p.birthDate)===3);
+  const[archiveConfirm,setArchiveConfirm]=useState(false);
+  const[archiveDone,setArchiveDone]=useState("");
+  const archiveGrade3=()=>{
+    const ids=new Set(archiveCandidates.map(p=>p.id));
+    const day=todayStr();
+    onBulkUpdate(players.map(p=>ids.has(p.id)?{...p,archivedAt:day,gradYear:calcGradYear(p)}:p));
+    setArchiveConfirm(false);
+    setArchiveDone(`${ids.size}人を引退選手としてアーカイブしました（記録はすべて保存されています）`);
+  };
+  const unarchive=(id:string)=>onBulkUpdate(players.map(p=>p.id===id?{...p,archivedAt:undefined,gradYear:undefined}:p));
   // ---- 体重推移比較：選択 ----
   const[compareNotice,setCompareNotice]=useState("");
-  const compareRoster=players.filter(p=>!isTestPlayer(p));
+  const compareRoster=viewList.filter(p=>!isTestPlayer(p));
   const mainPos=(p:Player)=>p.position[0]||"未設定";
   const comparePositions=POS_ORDER.filter(pos=>compareRoster.some(p=>mainPos(p)===pos));
   const isGroupSelected=(members:Player[])=>members.length>0&&members.every(p=>compareIds.includes(p.id));
@@ -2424,7 +2477,11 @@ function CoachScreen({players,onBack,onPlayerClick,onDelete,onBulkUpdate,compare
   const[delId,setDelId]=useState<string|null>(null);
   const[autoAssigned,setAutoAssigned]=useState(false);
   const handleSort=(key:SortKey)=>{if(key===sortKey)setSortDir(d=>d==="asc"?"desc":"asc");else{setSortKey(key);setSortDir("asc");}};
-  const sorted=sortPlayers(players,sortKey,sortDir);
+  // 引退選手は卒業年の新しい順→名前順で固定（学年ソートは全員3年になるため使わない）
+  const sorted=showArchived
+    ?[...archivedList].sort((a,b)=>((b.gradYear??0)-(a.gradYear??0))||a.name.localeCompare(b.name,"ja"))
+    :sortPlayers(activeList,sortKey,sortDir);
+  let lastGradYear=-1;
   const rkPos=(pos:string[])=>{if(!pos.length)return POS_ORDER.length;const idx=POS_ORDER.indexOf(pos[0]);return idx>=0?idx:POS_ORDER.length;};
   let lastPosGroup="";
   let lastGradeCoach=-1;
@@ -2436,7 +2493,7 @@ function CoachScreen({players,onBack,onPlayerClick,onDelete,onBulkUpdate,compare
         <span style={{fontSize:18,fontWeight:800,color:TEXT,flex:1}}>コーチ：全選手一覧</span>
         {!autoAssigned&&(
           <button onClick={()=>{
-            const updated=players.map(p=>({...p,team:autoAssignTeam(p)??p.team}));
+            const updated=players.map(p=>isArchived(p)?p:({...p,team:autoAssignTeam(p)??p.team}));
             onBulkUpdate(updated);setAutoAssigned(true);
           }} style={{padding:"7px 12px",borderRadius:10,background:GOLD_L,border:`1px solid ${GOLD}`,color:"#7a5000",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap"}}>
             🏈 チーム自動設定
@@ -2444,6 +2501,36 @@ function CoachScreen({players,onBack,onPlayerClick,onDelete,onBulkUpdate,compare
         )}
         {autoAssigned&&<span style={{fontSize:11,color:GREEN,fontWeight:700}}>✓ チーム設定済み</span>}
       </div>
+      {/* 現役／引退の切り替え・CSV書き出し */}
+      <div style={{display:"flex",gap:8}}>
+        <button onClick={()=>{setShowArchived(!showArchived);setCompareIds([]);setArchiveDone("");}} style={{flex:1,minHeight:42,borderRadius:10,background:showArchived?"#4B5563":"#fff",border:`1.5px solid ${showArchived?"#4B5563":BORDER}`,color:showArchived?"#fff":MUTED,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+          {showArchived?"← 現役選手に戻る":`🎓 引退選手（${archivedList.length}人）`}
+        </button>
+        <button onClick={()=>downloadWeightCsv(players)} style={{flex:1,minHeight:42,borderRadius:10,background:"#fff",border:`1.5px solid ${BORDER}`,color:MUTED,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+          📥 CSV書き出し（全員）
+        </button>
+      </div>
+      {showArchived&&<div style={{fontSize:12,color:MUTED,lineHeight:1.6,background:"#F3F4F6",borderRadius:8,padding:"8px 12px"}}>引退した選手の記録です。現役の一覧・マネージャー入力・集計には含まれません。グラフや比較、CSVでは今まで通り使えます。</div>}
+      {archiveDone&&<div style={{fontSize:13,color:GREEN,fontWeight:700,background:OK_BG,border:`1px solid ${OK_BRD}`,borderRadius:8,padding:"8px 12px"}}>✓ {archiveDone}</div>}
+      {/* 3年生の一括アーカイブ（引退時のみ） */}
+      {!showArchived&&!compareMode&&archiveCandidates.length>0&&(
+        <button onClick={()=>setArchiveConfirm(true)} style={{minHeight:42,borderRadius:10,background:"#fff",border:"1.5px dashed #6B7280",color:"#4B5563",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+          🎓 3年生（{archiveCandidates.length}人）を引退としてアーカイブ
+        </button>
+      )}
+      {archiveConfirm&&(
+        <div role="dialog" aria-modal="true" onClick={()=>setArchiveConfirm(false)} style={{position:"fixed",inset:0,zIndex:300,background:"rgba(0,0,0,0.45)",display:"flex",alignItems:"center",justifyContent:"center",padding:24}}>
+          <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:16,padding:"22px 20px 18px",width:"100%",maxWidth:360,boxShadow:"0 10px 30px rgba(0,0,0,0.25)"}}>
+            <div style={{fontSize:16,fontWeight:800,color:TEXT,lineHeight:1.6,marginBottom:6}}>3年生{archiveCandidates.length}人を引退としてアーカイブしますか？</div>
+            <div style={{fontSize:12,color:MUTED,lineHeight:1.7,marginBottom:10}}>体重の記録は削除されません。現役の一覧・マネージャー入力からは外れ、「🎓 引退選手」でいつでも見られます。1人ずつ元に戻すこともできます。</div>
+            <div style={{fontSize:12,color:TEXT,background:"#F3F4F6",borderRadius:8,padding:"8px 10px",marginBottom:16,lineHeight:1.7,maxHeight:120,overflowY:"auto"}}>{archiveCandidates.map(p=>p.name).join("、")}</div>
+            <div style={{display:"flex",gap:10}}>
+              <button onClick={()=>setArchiveConfirm(false)} style={{flex:1,minHeight:46,borderRadius:10,background:"#fff",border:`1.5px solid ${BORDER}`,color:TEXT,fontSize:15,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>キャンセル</button>
+              <button onClick={archiveGrade3} style={{flex:1,minHeight:46,borderRadius:10,background:"#4B5563",border:"none",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"inherit"}}>アーカイブする</button>
+            </div>
+          </div>
+        </div>
+      )}
       {/* 体重推移の比較：選択パネル */}
       {!compareMode?(
         <button onClick={()=>setCompareMode(true)} style={{minHeight:46,borderRadius:12,background:"#fff",border:`1.5px solid ${MAROON}`,color:MAROON,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
@@ -2475,7 +2562,8 @@ function CoachScreen({players,onBack,onPlayerClick,onDelete,onBulkUpdate,compare
           {compareNotice&&<div style={{fontSize:12,color:"#92400e",background:"#fffbeb",border:"1px solid #fcd34d",borderRadius:8,padding:"6px 10px",marginTop:8,fontWeight:600}}>{compareNotice}</div>}
         </Card>
       )}
-      {/* 単独ソート */}
+      {/* 単独ソート（引退選手の表示中は卒業年順で固定） */}
+      {!showArchived&&<>
       <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
         {SORT_OPTIONS.filter(o=>!o.compound).map(opt=>{const ac=opt.key===sortKey;return(
           <button key={opt.key} onClick={()=>handleSort(opt.key)} style={{padding:"7px 13px",borderRadius:20,fontSize:12,fontWeight:ac?700:400,background:ac?MAROON:"transparent",color:ac?"#fff":MUTED,border:`1px solid ${ac?MAROON:BORDER}`,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",minHeight:40}}>
@@ -2493,14 +2581,15 @@ function CoachScreen({players,onBack,onPlayerClick,onDelete,onBulkUpdate,compare
             {opt.label}{ac?(sortDir==="asc"?" ↑":" ↓"):""}
           </button>);})}
       </div>
-      {sorted.length===0?<Card><div style={{textAlign:"center",color:MUTED,fontSize:14,padding:"20px 0"}}>選手が登録されていません</div></Card>:
+      </>}
+      {sorted.length===0?<Card><div style={{textAlign:"center",color:MUTED,fontSize:14,padding:"20px 0"}}>{showArchived?"引退選手はまだいません":"選手が登録されていません"}</div></Card>:
         sorted.map(p=>{
           const cw=latestWeight(p)??0,g=calcGoalInfo(p,cw),sl=g.finalSeason?FINAL_SEASON_STYLE:statusStyle(calcStatus(p,g));
           const lastDate=[...p.measurements].sort((a,b)=>b.date.localeCompare(a.date))[0]?.date;
           const daysSince=lastDate?Math.round((Date.now()-new Date(lastDate).getTime())/86400000):null;
           const isDeleting=!compareMode&&delId===p.id;
           const isCompared=compareIds.includes(p.id);
-          const thuUnmeasured=isThursdayUnmeasured(p);
+          const thuUnmeasured=!isArchived(p)&&isThursdayUnmeasured(p);
           const tr=thursdayRate(p);
           // 実際の月間増加率（直近8週間のみ使用：古い誤入力の影響を排除）
           const ms=[...p.measurements].sort((a,b)=>a.date.localeCompare(b.date));
@@ -2530,10 +2619,22 @@ function CoachScreen({players,onBack,onPlayerClick,onDelete,onBulkUpdate,compare
           // 学年区切り
           const grade=calcGrade(p.birthDate);
           const isGradePrimary=sortKey==="grade"||sortKey==="grade_weight"||sortKey==="grade_status"||sortKey==="grade_gain";
-          const showGradeHeader=isGradePrimary&&grade!==lastGradeCoach;
+          const showGradeHeader=!showArchived&&isGradePrimary&&grade!==lastGradeCoach;
           lastGradeCoach=grade;
+          // 引退選手：卒業年で区切る。在籍中の総増減（最初→最後の記録）も表示
+          const archived=isArchived(p);
+          const showGradYearHeader=showArchived&&(p.gradYear??0)!==lastGradYear;
+          lastGradYear=p.gradYear??0;
+          const careerGain=ms.length>=2?Math.round((ms[ms.length-1].weight-ms[0].weight)*10)/10:null;
           return(
             <div key={p.id}>
+              {showGradYearHeader&&(
+                <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8,marginBottom:2}}>
+                  <div style={{height:1,flex:1,background:BORDER}}/>
+                  <span style={{fontSize:11,fontWeight:800,color:"#4B5563",letterSpacing:"0.1em",padding:"0 4px"}}>🎓 {p.gradYear?`${p.gradYear}年3月卒`:"卒業年不明"}</span>
+                  <div style={{height:1,flex:1,background:BORDER}}/>
+                </div>
+              )}
               {showTeamHeader&&(
                 <div style={{display:"flex",alignItems:"center",gap:8,marginTop:8,marginBottom:2}}>
                   <div style={{height:2,flex:1,background:teamC?.color??BORDER}}/>
@@ -2557,7 +2658,7 @@ function CoachScreen({players,onBack,onPlayerClick,onDelete,onBulkUpdate,compare
                   <div style={{height:1,flex:1,background:BORDER}}/>
                 </div>
               )}
-              <div style={{background:teamC?teamC.bg:CARD,border:compareMode&&isCompared?`2.5px solid ${MAROON}`:`1px solid ${isDeleting?RED:thuUnmeasured?"#d97706":teamC?teamC.border:sl.brd}`,borderRadius:12,overflow:"hidden"}}>
+              <div style={{background:teamC?teamC.bg:CARD,border:compareMode&&isCompared?`2.5px solid ${MAROON}`:`1px solid ${isDeleting?RED:archived?"#D1D5DB":thuUnmeasured?"#d97706":teamC?teamC.border:sl.brd}`,borderRadius:12,overflow:"hidden"}}>
                 {/* 1画面に多くの選手が収まるよう、4行固定のコンパクト表示 */}
                 <div style={{padding:"9px 12px",display:"flex",gap:8,alignItems:"stretch"}}>
                   <button onClick={()=>compareMode?toggleOne(p.id):onPlayerClick(p)} style={{flex:1,minWidth:0,background:"none",border:"none",textAlign:"left",cursor:"pointer",fontFamily:"inherit",padding:0,display:"flex",flexDirection:"column",gap:3}}>
@@ -2570,30 +2671,40 @@ function CoachScreen({players,onBack,onPlayerClick,onDelete,onBulkUpdate,compare
                       {teamC&&<span style={{fontSize:10,fontWeight:800,color:teamC.color,background:teamC.bg,border:`1px solid ${teamC.border}`,borderRadius:8,padding:"1px 6px",flexShrink:0}}>Team{teamNum}</span>}
                       <span style={{fontSize:12,color:MUTED,fontWeight:700,overflow:"hidden",textOverflow:"ellipsis"}}>{p.position[0]||"未設定"}{p.position.length>1&&<span style={{color:MUTED2,fontWeight:400}}>+{p.position.length-1}</span>}</span>
                     </div>
-                    {/* 2行目：現在 → 目標 */}
+                    {/* 2行目：現在 → 目標（引退選手は在籍中の推移） */}
                     <div style={{fontSize:13,color:TEXT,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
                       {cw<=0?<span style={{color:MUTED}}>体重未記録</span>
+                        :archived?<>{ms.length>=2&&<>{ms[0].weight} → </>}最終 <strong>{cw}</strong>kg{careerGain!==null&&<strong style={{color:careerGain>=0?GREEN:RED,fontSize:12}}>（{careerGain>=0?"+":""}{careerGain}kg）</strong>}</>
                         :g.finalSeason?<>現在 <strong>{cw}</strong>kg</>
                         :<>現在 <strong>{cw}</strong> → 目標 <strong style={{color:MAROON}}>{g.target}</strong>kg<span style={{fontSize:12,color:MUTED}}>（あと{g.gainNeeded}kg）</span></>}
                     </div>
                     {/* 3行目：実績と必要ペース（最終大会期間は必要ペースなし） */}
                     <div style={{fontSize:12,color:MUTED,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
-                      {cw>0?<>実績 {actualGain!==null?<strong style={{color:g.finalSeason?TEXT:gainColor}}>{actualGain>=0?"+":""}{actualGain}kg/月</strong>:"—"}{!g.finalSeason&&<>（必要 +{g.monthlyNeeded}kg/月）</>}</>:" "}
+                      {archived
+                        ?<>記録 {ms.length}回{ms.length>0&&<>（{ms[0].date.slice(0,7).replace("-","/")}〜{ms[ms.length-1].date.slice(0,7).replace("-","/")}）</>}</>
+                        :cw>0?<>実績 {actualGain!==null?<strong style={{color:g.finalSeason?TEXT:gainColor}}>{actualGain>=0?"+":""}{actualGain}kg/月</strong>:"—"}{!g.finalSeason&&<>（必要 +{g.monthlyNeeded}kg/月）</>}</>:" "}
                     </div>
-                    {/* 4行目：計測状況 */}
+                    {/* 4行目：計測状況（現役のみ） */}
+                    {!archived&&(
                     <div style={{fontSize:11,color:MUTED,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
                       {tr.total>0&&<span>計測率 <strong style={{color:tr.rate>=80?GREEN:tr.rate>=50?"#a07000":RED}}>{tr.rate}%</strong>（{tr.measured}/{tr.total}回）</span>}
                       {thuUnmeasured&&<span style={{color:"#92400e",fontWeight:700}}>📅 木曜未計測</span>}
                       {daysSince!==null&&daysSince>14&&<span style={{color:RED,fontWeight:700}}>⚠ {daysSince}日未記録</span>}
                     </div>
+                    )}
                   </button>
-                  {/* 右列：ステータス（上）・削除（下） */}
+                  {/* 右列：ステータス（上）・削除／アーカイブ解除（下） */}
                   <div style={{display:"flex",flexDirection:"column",alignItems:"flex-end",justifyContent:"space-between",gap:6,flexShrink:0}}>
-                    <span style={{background:sl.bg,border:`1px solid ${sl.brd}`,borderRadius:6,padding:"3px 8px",fontSize:11,fontWeight:700,color:sl.color,whiteSpace:"nowrap"}}>
-                      {g.goalType==="recomp"?"維持 ":g.goalType==="cut"?"減量 ":""}{sl.text.split("：").pop()}
-                    </span>
-                    {!compareMode&&(
-                      <button onClick={()=>setDelId(p.id)} style={{background:"none",border:`1px solid ${NG_BRD}`,borderRadius:6,padding:"4px 10px",fontSize:11,color:RED,cursor:"pointer",fontFamily:"inherit",minHeight:30}}>
+                    {archived
+                      ?<span style={{background:"#F3F4F6",border:"1px solid #D1D5DB",borderRadius:6,padding:"3px 8px",fontSize:11,fontWeight:700,color:"#4B5563",whiteSpace:"nowrap"}}>🎓 引退</span>
+                      :<span style={{background:sl.bg,border:`1px solid ${sl.brd}`,borderRadius:6,padding:"3px 8px",fontSize:11,fontWeight:700,color:sl.color,whiteSpace:"nowrap"}}>
+                        {g.goalType==="recomp"?"維持 ":g.goalType==="cut"?"減量 ":""}{sl.text.split("：").pop()}
+                      </span>}
+                    {!compareMode&&(archived
+                      ?<button onClick={()=>unarchive(p.id)} style={{background:"none",border:`1px solid ${BORDER}`,borderRadius:6,padding:"4px 8px",fontSize:11,color:MUTED,cursor:"pointer",fontFamily:"inherit",minHeight:30,whiteSpace:"nowrap"}}>
+                        現役に戻す
+                      </button>
+                      :<button onClick={()=>setDelId(p.id)} style={{background:"none",border:`1px solid ${NG_BRD}`,borderRadius:6,padding:"4px 10px",fontSize:11,color:RED,cursor:"pointer",fontFamily:"inherit",minHeight:30}}>
                         削除
                       </button>
                     )}
@@ -3130,6 +3241,8 @@ export default function WeightApp(){
   // コーチ：体重推移比較（比較ページから戻っても選択を保持するためここで管理）
   const[compareMode,setCompareMode]=useState(false);
   const[compareIds,setCompareIds]=useState<string[]>([]);
+  // コーチ一覧：引退（アーカイブ）選手の表示中か。選手詳細から戻っても保持
+  const[showArchived,setShowArchived]=useState(false);
   const[myPlayerId,setMyPlayerIdState]=useState<string|null>(null);
   // 認証状態：null=確認中, false=未認証, true=認証済み
   const[authed,setAuthed]=useState<boolean|null>(null);
@@ -3240,7 +3353,7 @@ export default function WeightApp(){
       case"player_new":setScreen("player_list");break;
       case"player_edit":setScreen("player_detail");break;
       case"player_detail":setScreen(prevScreen);break;
-      case"coach_dashboard":setScreen("home");setCompareMode(false);break;
+      case"coach_dashboard":setScreen("home");setCompareMode(false);setShowArchived(false);break;
       case"coach_compare":setScreen("coach_dashboard");break;
       default:break;
     }
@@ -3315,6 +3428,7 @@ export default function WeightApp(){
         {screen==="coach_pin"&&<PinScreen title="コーチ確認" pinCheck={p=>p===COACH_PIN} onUnlock={()=>{setCoachOK(true);setScreen("coach_dashboard");}} onBack={goBack}/>}
         {screen==="coach_dashboard"&&(<CoachScreen players={players} onBack={goBack} onPlayerClick={p=>goDetail(p,"coach_dashboard")} onDelete={id=>{const upd=players.filter(p=>p.id!==id);save(upd);if(isSupabaseEnabled)cloudDeletePlayer(id).catch(console.error);}} onBulkUpdate={save}
           compareMode={compareMode} setCompareMode={setCompareMode} compareIds={compareIds} setCompareIds={setCompareIds}
+          showArchived={showArchived} setShowArchived={setShowArchived}
           onOpenCompare={()=>{if(typeof window!=="undefined")scrollSaveRef.current["coach_dashboard"]=window.scrollY;setScreen("coach_compare");}}/>)}
         {screen==="coach_compare"&&<CompareScreen players={players} ids={compareIds} onBack={goBack}/>}
         {screen==="manager_bulk"&&<ManagerBulkScreen players={players} onSave={save} onBack={goBack}/>}
