@@ -11,9 +11,8 @@
  */
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
+import { ROOT, writeStatus, notifyMac } from "./backup-status.mjs";
 
-const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const KEEP_WEEKS = 16; // これより古いバックアップは自動削除（容量管理）
 
 function readEnv() {
@@ -59,9 +58,22 @@ async function main() {
 
   console.log(`✓ バックアップ完了: ${path.relative(ROOT, file)}`);
   console.log(`  選手数: ${rows.length} / 保持件数: ${all.length - stale.length}（${stale.length}件を整理）`);
+
+  // 状態を記録（ヘルスチェックが参照する。件数と日時のみで個人データは含めない）
+  const measurements = rows.reduce((s, r) => s + (r.data?.measurements?.length ?? 0), 0);
+  writeStatus({
+    lastSuccessAt: new Date().toISOString(),
+    lastSuccessFile: path.basename(file),
+    players: rows.length,
+    measurements,
+  });
 }
 
-main().catch((e) => {
+main().catch(async (e) => {
   console.error("✗ バックアップ失敗:", e.message);
+  try {
+    writeStatus({ lastFailureAt: new Date().toISOString(), lastFailureError: e.message });
+  } catch {}
+  await notifyMac("⚠ 体重アプリ：バックアップ失敗", e.message.slice(0, 120));
   process.exit(1);
 });
