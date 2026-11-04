@@ -2779,25 +2779,24 @@ function CoachScreen({players,onBack,onPlayerClick,onDelete,onBulkUpdate,compare
         )}
         {autoAssigned&&<span style={{fontSize:11,color:GREEN,fontWeight:700}}>✓ チーム設定済み</span>}
       </div>
-      {/* パソコン（幅1100px以上）：左＝操作パネル（固定）／右＝チーム分析＋カードのグリッド。
+      {/* パソコン（幅1100px以上）：上＝操作ツールバー（横並び）／下＝主要数字・タブ・カード3列。
           スマホでは各ラッパーを display:contents にして従来の縦並びのまま */}
-      <div style={wide?{display:"grid",gridTemplateColumns:"300px minmax(0,1fr)",gap:20,alignItems:"start"}:{display:"contents"}}>
-      <div style={wide?{position:"sticky",top:16,display:"flex",flexDirection:"column",gap:12,maxHeight:"calc(100vh - 32px)",overflowY:"auto",paddingRight:4}:{display:"contents"}}>
-      {wide&&<div style={{fontSize:11,fontWeight:800,color:MUTED,letterSpacing:"0.08em"}}>表示・操作</div>}
+      <div style={wide?{display:"grid",gridTemplateColumns:"minmax(0,1fr)",gap:14,alignItems:"start"}:{display:"contents"}}>
+      <div style={wide?{display:"flex",flexWrap:"wrap",gap:8,alignItems:"center",background:"#ffffff99",border:`1px solid ${BORDER}`,borderRadius:14,padding:"10px 12px"}:{display:"contents"}}>
       {/* 現役／引退の切り替え・CSV書き出し */}
       <div style={{display:"flex",gap:8}}>
-        <button onClick={()=>{setShowArchived(!showArchived);setCompareIds([]);setArchiveDone("");}} style={{flex:1,minHeight:42,borderRadius:10,background:showArchived?"#4B5563":"#fff",border:`1.5px solid ${showArchived?"#4B5563":BORDER}`,color:showArchived?"#fff":MUTED,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+        <button onClick={()=>{setShowArchived(!showArchived);setCompareIds([]);setArchiveDone("");}} style={{flex:1,padding:"0 14px",whiteSpace:"nowrap",minHeight:42,borderRadius:10,background:showArchived?"#4B5563":"#fff",border:`1.5px solid ${showArchived?"#4B5563":BORDER}`,color:showArchived?"#fff":MUTED,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
           {showArchived?"← 現役選手に戻る":`🎓 引退選手（${archivedList.length}人）`}
         </button>
-        <button onClick={()=>downloadWeightCsv(players)} style={{flex:1,minHeight:42,borderRadius:10,background:"#fff",border:`1.5px solid ${BORDER}`,color:MUTED,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+        <button onClick={()=>downloadWeightCsv(players)} style={{flex:1,padding:"0 14px",whiteSpace:"nowrap",minHeight:42,borderRadius:10,background:"#fff",border:`1.5px solid ${BORDER}`,color:MUTED,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
           📥 CSV書き出し（全員）
         </button>
       </div>
-      {showArchived&&<div style={{fontSize:12,color:MUTED,lineHeight:1.6,background:"#F3F4F6",borderRadius:8,padding:"8px 12px"}}>引退した選手の記録です。現役の一覧・マネージャー入力・集計には含まれません。グラフや比較、CSVでは今まで通り使えます。</div>}
-      {archiveDone&&<div style={{fontSize:13,color:GREEN,fontWeight:700,background:OK_BG,border:`1px solid ${OK_BRD}`,borderRadius:8,padding:"8px 12px"}}>✓ {archiveDone}</div>}
+      {showArchived&&<div style={{fontSize:12,color:MUTED,lineHeight:1.6,background:"#F3F4F6",borderRadius:8,padding:"8px 12px",width:"100%",boxSizing:"border-box"}}>引退した選手の記録です。現役の一覧・マネージャー入力・集計には含まれません。グラフや比較、CSVでは今まで通り使えます。</div>}
+      {archiveDone&&<div style={{fontSize:13,color:GREEN,fontWeight:700,background:OK_BG,border:`1px solid ${OK_BRD}`,borderRadius:8,padding:"8px 12px",width:"100%",boxSizing:"border-box"}}>✓ {archiveDone}</div>}
       {/* 3年生の一括アーカイブ（引退時のみ） */}
       {!showArchived&&!compareMode&&archiveCandidates.length>0&&(
-        <button onClick={()=>setArchiveConfirm(true)} style={{minHeight:42,borderRadius:10,background:"#fff",border:"1.5px dashed #6B7280",color:"#4B5563",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+        <button onClick={()=>setArchiveConfirm(true)} style={{padding:"0 14px",whiteSpace:"nowrap",minHeight:42,borderRadius:10,background:"#fff",border:"1.5px dashed #6B7280",color:"#4B5563",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
           🎓 3年生（{archiveCandidates.length}人）を引退としてアーカイブ
         </button>
       )}
@@ -2816,11 +2815,11 @@ function CoachScreen({players,onBack,onPlayerClick,onDelete,onBulkUpdate,compare
       )}
       {/* 体重推移の比較：選択パネル */}
       {!compareMode?(
-        <button onClick={()=>setCompareMode(true)} style={{minHeight:46,borderRadius:12,background:"#fff",border:`1.5px solid ${MAROON}`,color:MAROON,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
+        <button onClick={()=>setCompareMode(true)} style={{padding:"0 16px",whiteSpace:"nowrap",minHeight:wide?42:46,borderRadius:12,background:"#fff",border:`1.5px solid ${MAROON}`,color:MAROON,fontSize:14,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
           📈 複数選手の体重推移を比較
         </button>
       ):(
-        <Card style={{border:`2px solid ${MAROON}`,padding:"12px 14px"}}>
+        <Card style={{border:`2px solid ${MAROON}`,padding:"12px 14px",...(wide?{width:"100%",boxSizing:"border-box"}:{})}}>
           <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",marginBottom:8}}>
             <span style={{fontSize:13,fontWeight:800,color:MAROON}}>📈 比較する選手を選ぶ（最大{COMPARE_MAX}人）</span>
             <button onClick={()=>{setCompareMode(false);setCompareNotice("");}} style={{padding:"5px 10px",borderRadius:8,background:"transparent",border:`1px solid ${BORDER}`,color:MUTED,fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>終了</button>
@@ -2845,8 +2844,9 @@ function CoachScreen({players,onBack,onPlayerClick,onDelete,onBulkUpdate,compare
           {compareNotice&&<div style={{fontSize:12,color:"#92400e",background:"#fffbeb",border:"1px solid #fcd34d",borderRadius:8,padding:"6px 10px",marginTop:8,fontWeight:600}}>{compareNotice}</div>}
         </Card>
       )}
-      {/* 単独ソート（引退選手の表示中は卒業年順で固定） */}
+      {/* 単独ソート（引退選手の表示中は卒業年順で固定）。パソコンでは改行して並べ替えを1段にまとめる */}
       {!showArchived&&<>
+      {wide&&<div style={{flexBasis:"100%",height:0}}/>}
       <div style={{display:"flex",gap:6,flexWrap:"wrap"}}>
         {SORT_OPTIONS.filter(o=>!o.compound).map(opt=>{const ac=opt.key===sortKey;return(
           <button key={opt.key} onClick={()=>handleSort(opt.key)} style={{padding:"7px 13px",borderRadius:20,fontSize:12,fontWeight:ac?700:400,background:ac?MAROON:"transparent",color:ac?"#fff":MUTED,border:`1px solid ${ac?MAROON:BORDER}`,cursor:"pointer",fontFamily:"inherit",whiteSpace:"nowrap",minHeight:40}}>
@@ -2900,7 +2900,7 @@ function CoachScreen({players,onBack,onPlayerClick,onDelete,onBulkUpdate,compare
           {showAnalytics&&<CoachAnalytics players={analyticsPlayers} onPlayerClick={onPlayerClick} wide={false} scopeLabel={scopeSelected?"選択中の選手":"現役選手"}/>}
         </>)}
       {wide&&showArchived&&<div style={{fontSize:13,fontWeight:800,color:TEXT,marginTop:4}}>🎓 引退選手<span style={{fontSize:12,color:MUTED,fontWeight:500,marginLeft:6}}>{sorted.length}人</span></div>}
-      <div style={wide?{display:showListOnWide?"grid":"none",gridTemplateColumns:"repeat(auto-fill,minmax(310px,1fr))",gap:12,alignItems:"start"}:{display:"contents"}}>
+      <div style={wide?{display:showListOnWide?"grid":"none",gridTemplateColumns:"repeat(3,minmax(0,1fr))",gap:12,alignItems:"start"}:{display:"contents"}}>
       {sorted.length===0?<Card><div style={{textAlign:"center",color:MUTED,fontSize:14,padding:"20px 0"}}>{showArchived?"引退選手はまだいません":"選手が登録されていません"}</div></Card>:
         sorted.map(p=>{
           const cw=latestWeight(p)??0,g=calcGoalInfo(p,cw),sl=g.finalSeason?FINAL_SEASON_STYLE:statusStyle(calcStatus(p,g));
