@@ -2474,7 +2474,8 @@ const STATUS_META:{key:StatusKey;label:string;color:string}[]=[
 ];
 const GROUP_COLORS:{[k:string]:string}={全体:MAROON,Bigs:"#0072B2",Mids:"#E69F00",Skills:"#009E73"};
 
-function CoachAnalytics({players,onPlayerClick,wide,scopeLabel="現役選手"}:{players:Player[];onPlayerClick:(p:Player)=>void;wide:boolean;scopeLabel?:string;}){
+function CoachAnalytics({players,onPlayerClick,wide,scopeLabel="現役選手",section="all"}:{players:Player[];onPlayerClick:(p:Player)=>void;wide:boolean;scopeLabel?:string;
+  section?:"all"|"kpi"|"charts";}){ // パソコンでは KPI（一覧の上に常時）と charts（タブ）を分けて表示
   const roster=players.filter(p=>!isTestPlayer(p)&&!isArchived(p));
   if(roster.length===0)return null;
   const lastThu=lastThursdayStr();
@@ -2556,6 +2557,7 @@ function CoachAnalytics({players,onPlayerClick,wide,scopeLabel="現役選手"}:{
   return(
     <div style={{display:"flex",flexDirection:"column",gap:12}}>
       {/* KPI */}
+      {section!=="charts"&&
       <div style={{display:"grid",gridTemplateColumns:wide?"repeat(6,minmax(0,1fr))":"repeat(2,minmax(0,1fr))",gap:10}}>
         {kpis.map(k=>(
           <div key={k.label} style={{...card,padding:"12px 14px"}}>
@@ -2564,7 +2566,8 @@ function CoachAnalytics({players,onPlayerClick,wide,scopeLabel="現役選手"}:{
             <div style={{fontSize:11,color:MUTED2,marginTop:4}}>{k.note}</div>
           </div>
         ))}
-      </div>
+      </div>}
+      {section!=="kpi"&&<>
       <div style={{display:"grid",gridTemplateColumns:wide?"minmax(0,2fr) minmax(0,1fr)":"minmax(0,1fr)",gap:12}}>
         {/* 体重の増減推移 */}
         <div style={card}>
@@ -2681,6 +2684,7 @@ function CoachAnalytics({players,onPlayerClick,wide,scopeLabel="現役選手"}:{
           </div>
         </div>
       </div>
+      </>}
     </div>
   );
 }
@@ -2697,6 +2701,12 @@ function CoachScreen({players,onBack,onPlayerClick,onDelete,onBulkUpdate,compare
   const hasSelection=compareMode&&selectedPlayers.length>0;
   const scopeSelected=hasSelection&&!scopeAll;
   const analyticsPlayers=scopeSelected?selectedPlayers:players;
+  // パソコンの右側タブ：選手一覧（既定）／グラフ・分析。引退選手の表示中は常に一覧
+  const[rightTab,setRightTab]=useState<"list"|"charts">("list");
+  const showListOnWide=showArchived||rightTab==="list";
+  // 1ヶ月前・3ヶ月前の比較日（パソコンのカード5行目）
+  const dAgo=(n:number)=>{const d=new Date();d.setDate(d.getDate()-n);return ymd(d);};
+  const date1m=dAgo(30),date3m=dAgo(91);
   // ---- 引退アーカイブ ----
   // 一覧に出すのは「現役」か「引退」のどちらか。保存（onBulkUpdate）には必ず players 全体を渡す
   const activeList=players.filter(p=>!isArchived(p));
@@ -2872,15 +2882,25 @@ function CoachScreen({players,onBack,onPlayerClick,onDelete,onBulkUpdate,compare
         </div>
       )}
       {!showArchived&&(wide
-        ?<CoachAnalytics players={analyticsPlayers} onPlayerClick={onPlayerClick} wide scopeLabel={scopeSelected?"選択中の選手":"現役選手"}/>
+        ?<>
+          {/* パソコン：主要数字は常に一覧の上。グラフ類はタブで切替（一覧へすぐ届くように） */}
+          <CoachAnalytics players={analyticsPlayers} onPlayerClick={onPlayerClick} wide section="kpi" scopeLabel={scopeSelected?"選択中の選手":"現役選手"}/>
+          <div style={{display:"flex",gap:0,borderBottom:`2px solid ${BORDER}`}}>
+            {([["list",`👥 選手一覧（${sorted.length}人）`],["charts","📊 グラフ・分析"]] as const).map(([k,label])=>{
+              const ac=rightTab===k;
+              return<button key={k} onClick={()=>setRightTab(k)} style={{padding:"10px 22px",fontSize:14,fontWeight:ac?800:600,background:"none",border:"none",borderBottom:`3px solid ${ac?MAROON:"transparent"}`,marginBottom:-2,color:ac?MAROON:MUTED,cursor:"pointer",fontFamily:"inherit"}}>{label}</button>;
+            })}
+          </div>
+          {rightTab==="charts"&&<CoachAnalytics players={analyticsPlayers} onPlayerClick={onPlayerClick} wide section="charts"/>}
+        </>
         :<>
           <button onClick={()=>setShowAnalytics(!showAnalytics)} style={{minHeight:42,borderRadius:10,background:showAnalytics?MAROON_L:"#fff",border:`1.5px solid ${showAnalytics?MAROON:BORDER}`,color:showAnalytics?MAROON:MUTED,fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"inherit"}}>
             📊 チーム分析を{showAnalytics?"閉じる ▲":"見る ▼"}
           </button>
           {showAnalytics&&<CoachAnalytics players={analyticsPlayers} onPlayerClick={onPlayerClick} wide={false} scopeLabel={scopeSelected?"選択中の選手":"現役選手"}/>}
         </>)}
-      {wide&&<div style={{fontSize:13,fontWeight:800,color:TEXT,marginTop:4}}>{showArchived?"🎓 引退選手":"選手一覧"}<span style={{fontSize:12,color:MUTED,fontWeight:500,marginLeft:6}}>{sorted.length}人</span></div>}
-      <div style={wide?{display:"grid",gridTemplateColumns:"repeat(auto-fill,minmax(310px,1fr))",gap:12,alignItems:"start"}:{display:"contents"}}>
+      {wide&&showArchived&&<div style={{fontSize:13,fontWeight:800,color:TEXT,marginTop:4}}>🎓 引退選手<span style={{fontSize:12,color:MUTED,fontWeight:500,marginLeft:6}}>{sorted.length}人</span></div>}
+      <div style={wide?{display:showListOnWide?"grid":"none",gridTemplateColumns:"repeat(auto-fill,minmax(310px,1fr))",gap:12,alignItems:"start"}:{display:"contents"}}>
       {sorted.length===0?<Card><div style={{textAlign:"center",color:MUTED,fontSize:14,padding:"20px 0"}}>{showArchived?"引退選手はまだいません":"選手が登録されていません"}</div></Card>:
         sorted.map(p=>{
           const cw=latestWeight(p)??0,g=calcGoalInfo(p,cw),sl=g.finalSeason?FINAL_SEASON_STYLE:statusStyle(calcStatus(p,g));
@@ -2990,6 +3010,21 @@ function CoachScreen({players,onBack,onPlayerClick,onDelete,onBulkUpdate,compare
                       {thuUnmeasured&&<span style={{color:"#92400e",fontWeight:700}}>📅 木曜未計測</span>}
                       {daysSince!==null&&daysSince>14&&<span style={{color:RED,fontWeight:700}}>⚠ {daysSince}日未記録</span>}
                     </div>
+                    )}
+                    {/* 5行目（パソコンのみ）：1ヶ月前・3ヶ月前の体重と今との差 */}
+                    {wide&&!archived&&cw>0&&(
+                      <div style={{display:"flex",gap:4,marginTop:3}} title="1ヶ月前・3ヶ月前の体重（kg）と今との差">
+                        {([["1ヶ月前",date1m],["3ヶ月前",date3m]] as const).map(([label,d])=>{
+                          const w=weightOnOrBefore(p,d);
+                          const diff=w===null?null:Math.round((cw-w)*10)/10;
+                          const good=diff===null?null:g.goalType==="cut"?diff<=0:diff>=0;
+                          return(
+                            <span key={label} style={{flex:1,minWidth:0,fontSize:11,background:"#ffffffaa",border:`1px solid ${BORDER}`,borderRadius:6,padding:"2px 6px",color:MUTED,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                              {label} {w===null?"—":<><strong style={{color:TEXT}}>{w}</strong> <strong style={{color:diff===0?MUTED:good?GREEN:RED}}>{diff===0?"±0":signed(diff)}</strong></>}
+                            </span>
+                          );
+                        })}
+                      </div>
                     )}
                   </button>
                   {/* 右列：ステータス（上）・削除／アーカイブ解除（下） */}
