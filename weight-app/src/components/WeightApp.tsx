@@ -2502,13 +2502,21 @@ function CoachAnalytics({players,onPlayerClick,wide,scopeLabel="現役選手",se
     const measured=eligible.filter(p=>p.measurements.some(m=>m.date===t)).length;
     return{t,rate:eligible.length?Math.round(measured/eligible.length*100):0,measured,total:eligible.length};
   });
-  // ---- 体重の増減推移（直近12週・ポジション群別の平均） ----
-  const thus12=recentThursdays(12);
+  // ---- 体重の増減推移（直近24週・ポジション群別の平均） ----
+  const TREND_WEEKS=24;
+  const thusTrend=recentThursdays(TREND_WEEKS);
+  const trendBase=(p:Player):{date:string;w:number}|null=>{
+    const w0=weightOnOrBefore(p,thusTrend[0]);
+    if(w0!==null)return{date:thusTrend[0],w:w0};
+    const first=[...p.measurements].filter(m=>m.date>=thusTrend[0]).sort((a,b)=>a.date.localeCompare(b.date))[0];
+    return first?{date:first.date,w:first.weight}:null;
+  };
   const groupNames=["全体","Bigs","Mids","Skills"];
   const trend=groupNames.map(gn=>{
     const members=rows.filter(r=>gn==="全体"||r.group===gn).map(r=>r.p);
-    const pts=thus12.map(t=>{
-      const diffs=members.map(p=>{const w0=weightOnOrBefore(p,thus12[0]),wt=weightOnOrBefore(p,t);return w0!==null&&wt!==null?wt-w0:null;}).filter((x):x is number=>x!==null);
+    const pts=thusTrend.map(t=>{
+      // 各選手の基準＝期間の開始日時点の体重。開始日より後に記録を始めた選手は、その最初の記録
+      const diffs=members.map(p=>{const b=trendBase(p);if(!b||t<b.date)return null;const wt=weightOnOrBefore(p,t);return wt!==null?wt-b.w:null;}).filter((x):x is number=>x!==null);
       return r1(avg(diffs));
     });
     return{gn,pts,n:members.length};
@@ -2551,7 +2559,7 @@ function CoachAnalytics({players,onPlayerClick,wide,scopeLabel="現役選手",se
   const step=[0.5,1,2,5].find(s=>Math.max(yMax-yMin,0.5)/s<=4)??5;
   yMin=Math.floor(yMin/step)*step;yMax=Math.ceil(yMax/step)*step;if(yMax-yMin<step)yMax=yMin+step;
   const ticks:number[]=[];for(let v=yMin;v<=yMax+1e-9;v+=step)ticks.push(Math.round(v*10)/10);
-  const xi=(i:number)=>L+i/(thus12.length-1)*(VW-L-R);
+  const xi=(i:number)=>L+i/(thusTrend.length-1)*(VW-L-R);
   const yv=(v:number)=>T+(yMax-v)/(yMax-yMin)*(VH-T-B);
 
   return(
@@ -2571,7 +2579,7 @@ function CoachAnalytics({players,onPlayerClick,wide,scopeLabel="現役選手",se
       <div style={{display:"grid",gridTemplateColumns:wide?"minmax(0,2fr) minmax(0,1fr)":"minmax(0,1fr)",gap:12}}>
         {/* 体重の増減推移 */}
         <div style={card}>
-          <div style={h}>体重の増減推移<span style={sub}>直近12週・{thus12[0].slice(5).replace("-","/")}を0kgとした平均</span></div>
+          <div style={h}>体重の増減推移<span style={sub}>直近{TREND_WEEKS}週・各選手の期間内の最初の記録を0kgとした平均</span></div>
           <svg width="100%" viewBox={`0 0 ${VW} ${VH}`} style={{display:"block"}} role="img" aria-label="ポジション群別の体重増減推移">
             {ticks.map(v=>(
               <g key={v}>
@@ -2579,8 +2587,8 @@ function CoachAnalytics({players,onPlayerClick,wide,scopeLabel="現役選手",se
                 <text x={L-6} y={yv(v)+4} textAnchor="end" fontSize={10} fill={MUTED}>{v>0?`+${v}`:v}</text>
               </g>
             ))}
-            {[0,Math.floor((thus12.length-1)/2),thus12.length-1].map(i=>(
-              <text key={i} x={xi(i)} y={VH-6} textAnchor={i===0?"start":i===thus12.length-1?"end":"middle"} fontSize={10} fill={MUTED}>{thus12[i].slice(5).replace("-","/")}</text>
+            {[0,1,2,3,4].map(k=>Math.round((thusTrend.length-1)*k/4)).map(i=>(
+              <text key={i} x={xi(i)} y={VH-6} textAnchor={i===0?"start":i===thusTrend.length-1?"end":"middle"} fontSize={10} fill={MUTED}>{thusTrend[i].slice(5).replace("-","/")}</text>
             ))}
             {trend.map(s=>{
               const pts=s.pts.map((v,i)=>v===null?null:`${xi(i)},${yv(v)}`).filter(Boolean).join(" ");
@@ -2997,14 +3005,22 @@ function CoachScreen({players,onBack,onPlayerClick,onDelete,onBulkUpdate,compare
                         :g.finalSeason?<>現在 <strong>{cw}</strong>kg</>
                         :<>現在 <strong>{cw}</strong> → 目標 <strong style={{color:MAROON}}>{g.target}</strong>kg<span style={{fontSize:12,color:MUTED}}>（あと{g.gainNeeded}kg）</span></>}
                     </div>
-                    {/* 3行目：実績と必要ペース（最終大会期間は必要ペースなし） */}
-                    <div style={{fontSize:12,color:MUTED,whiteSpace:"nowrap",overflow:"hidden",textOverflow:"ellipsis"}}>
+                    {/* 3行目：実績と必要ペース（最終大会期間は必要ペースなし）。
+                        パソコンでは計測率・木曜未計測・未記録もこの行の右端にまとめ、カードを1行減らす */}
+                    <div style={{fontSize:12,color:MUTED,whiteSpace:"nowrap",display:"flex",alignItems:"center",gap:8,minWidth:0}}>
+                      <span title={!archived&&cw>0?`実績 ${actualGain===null?"—":`${actualGain>=0?"+":""}${actualGain}kg/月`}${g.finalSeason?"":`（必要 +${g.monthlyNeeded}kg/月）`}`:undefined} style={{flex:1,minWidth:0,overflow:"hidden",textOverflow:"ellipsis"}}>
                       {archived
                         ?<>記録 {ms.length}回{ms.length>0&&<>（{ms[0].date.slice(0,7).replace("-","/")}〜{ms[ms.length-1].date.slice(0,7).replace("-","/")}）</>}</>
                         :cw>0?<>実績 {actualGain!==null?<strong style={{color:g.finalSeason?TEXT:gainColor}}>{actualGain>=0?"+":""}{actualGain}kg/月</strong>:"—"}{!g.finalSeason&&<>（必要 +{g.monthlyNeeded}kg/月）</>}</>:" "}
+                      </span>
+                      {wide&&!archived&&<>
+                        {tr.total>0&&<span title={`木曜の計測率 ${tr.measured}/${tr.total}回`} style={{flexShrink:0,fontSize:11}}>計測 <strong style={{color:tr.rate>=80?GREEN:tr.rate>=50?"#a07000":RED}}>{tr.rate}%</strong></span>}
+                        {thuUnmeasured&&<span title="直近の木曜が未計測" style={{flexShrink:0,fontSize:11,color:"#92400e",fontWeight:700}}>📅未計測</span>}
+                        {daysSince!==null&&daysSince>14&&<span style={{flexShrink:0,fontSize:11,color:RED,fontWeight:700}}>⚠{daysSince}日</span>}
+                      </>}
                     </div>
-                    {/* 4行目：計測状況（現役のみ） */}
-                    {!archived&&(
+                    {/* 4行目：計測状況（スマホの現役のみ。パソコンは3行目に統合） */}
+                    {!archived&&!wide&&(
                     <div style={{fontSize:11,color:MUTED,display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
                       {tr.total>0&&<span>計測率 <strong style={{color:tr.rate>=80?GREEN:tr.rate>=50?"#a07000":RED}}>{tr.rate}%</strong>（{tr.measured}/{tr.total}回）</span>}
                       {thuUnmeasured&&<span style={{color:"#92400e",fontWeight:700}}>📅 木曜未計測</span>}
