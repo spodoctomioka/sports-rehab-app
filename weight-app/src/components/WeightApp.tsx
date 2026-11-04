@@ -2894,7 +2894,7 @@ function CoachScreen({players,onBack,onPlayerClick,onDelete,onBulkUpdate,compare
           {/* パソコン：主要数字は常に一覧の上。グラフ類はタブで切替（一覧へすぐ届くように） */}
           <CoachAnalytics players={analyticsPlayers} onPlayerClick={onPlayerClick} wide section="kpi" scopeLabel={scopeSelected?"選択中の選手":"現役選手"}/>
           <div style={{display:"flex",gap:0,borderBottom:`2px solid ${BORDER}`}}>
-            {([["list",`👥 選手一覧（${sorted.length}人）`],["charts","📊 グラフ・分析"]] as const).map(([k,label])=>{
+            {([["list",`👥 選手一覧（${sorted.filter(p=>!isTestPlayer(p)).length}人）`],["charts","📊 グラフ・分析"]] as const).map(([k,label])=>{
               const ac=rightTab===k;
               return<button key={k} onClick={()=>setRightTab(k)} style={{padding:"10px 22px",fontSize:14,fontWeight:ac?800:600,background:"none",border:"none",borderBottom:`3px solid ${ac?MAROON:"transparent"}`,marginBottom:-2,color:ac?MAROON:MUTED,cursor:"pointer",fontFamily:"inherit"}}>{label}</button>;
             })}
